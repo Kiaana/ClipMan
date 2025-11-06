@@ -20,12 +20,26 @@ use std::sync::{Arc, Mutex};
 use std::fs;
 use std::path::PathBuf;
 
+#[cfg(target_os = "macos")]
+use cocoa::appkit::{NSApp, NSApplication, NSApplicationActivationPolicy};
+
+#[cfg(target_os = "macos")]
+fn set_activation_policy() {
+    unsafe {
+        let app = NSApp();
+        app.setActivationPolicy_(NSApplicationActivationPolicy::NSApplicationActivationPolicyAccessory);
+    }
+    log::info!("macOS activation policy set to Accessory (menu bar only)");
+}
+
 struct AppState {
     storage: Mutex<ClipStorage>,
     monitor: Mutex<Option<ClipboardMonitor>>,
     #[allow(dead_code)] // crypto is used indirectly via storage
     crypto: Arc<Crypto>,
     settings: Arc<SettingsManager>,
+    // Track content we just copied to prevent re-capturing
+    last_copied_by_us: Arc<Mutex<Option<String>>>,
 }
 
 // 密钥管理：生成或加载加密密钥
@@ -326,6 +340,9 @@ fn main() {
             }
             Err(e) => log::error!("❌ Failed to create clipboard instance: {}", e),
         }
+
+        // Set activation policy to Accessory (menu bar only, no Dock icon)
+        set_activation_policy();
     }
 
     tauri::Builder::default()
@@ -364,11 +381,14 @@ fn main() {
             }
             log::info!("Settings initialized");
 
+            let last_copied_by_us = Arc::new(Mutex::new(None));
+
             let app_state = AppState {
                 storage: Mutex::new(storage),
                 monitor: Mutex::new(None),
                 crypto: crypto.clone(),
                 settings: settings_manager.clone(),
+                last_copied_by_us: last_copied_by_us.clone(),
             };
 
             app.manage(app_state);
@@ -445,7 +465,7 @@ fn main() {
             let app_handle = app.handle().clone();
             let state: State<AppState> = app_handle.state();
 
-            let monitor = ClipboardMonitor::new(app_handle.clone());
+            let monitor = ClipboardMonitor::new(app_handle.clone(), last_copied_by_us.clone());
             monitor.start();
 
             *state.monitor.lock().unwrap() = Some(monitor);
@@ -510,9 +530,25 @@ fn copy_clip_to_clipboard(app: &AppHandle, clip_id: &str) -> Result<(), String> 
 
     match item.content_type {
         ContentType::Text => {
-            let text = String::from_utf8_lossy(&item.content);
-            clipboard.set_text(text.to_string()).map_err(|e| e.to_string())?;
-            log::info!("Copied text to clipboard: {} chars", text.len());
+            let text = String::from_utf8_lossy(&item.content).to_string();
+
+            // Mark this text as "copied by us" so monitor doesn't re-capture it
+            {
+                let mut last_copied = state.last_copied_by_us.lock().map_err(|e| e.to_string())?;
+                *last_copied = Some(text.clone());
+            }
+
+            clipboard.set_text(text.clone()).map_err(|e| e.to_string())?;
+            log::info!("✅ Copied text to clipboard: {} chars (marked as self-copy)", text.len());
+
+            // Clear the marker after 2 seconds
+            let last_copied_by_us = state.last_copied_by_us.clone();
+            tokio::spawn(async move {
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                if let Ok(mut last_copied) = last_copied_by_us.lock() {
+                    *last_copied = None;
+                }
+            });
         }
         ContentType::Image => {
             // TODO: 实现图片复制

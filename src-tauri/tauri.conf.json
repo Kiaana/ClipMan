@@ -10,6 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "title": "ClipMan - Clipboard Manager",
@@ -21,7 +22,9 @@
         "transparent": false,
         "visible": false,
         "skipTaskbar": true,
-        "alwaysOnTop": false
+        "alwaysOnTop": false,
+        "hiddenTitle": true,
+        "titleBarStyle": "Overlay"
       }
     ],
     "security": {

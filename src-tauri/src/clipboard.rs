@@ -1,6 +1,7 @@
 use arboard::{Clipboard, ImageData};
 use std::thread;
 use std::time::Duration;
+use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Manager, Emitter};
 use uuid::Uuid;
 use chrono::Utc;
@@ -9,17 +10,20 @@ use crate::storage::{ClipItem, ContentType};
 
 pub struct ClipboardMonitor {
     app_handle: AppHandle,
+    last_copied_by_us: Arc<Mutex<Option<String>>>,
 }
 
 impl ClipboardMonitor {
-    pub fn new(app_handle: AppHandle) -> Self {
+    pub fn new(app_handle: AppHandle, last_copied_by_us: Arc<Mutex<Option<String>>>) -> Self {
         Self {
             app_handle,
+            last_copied_by_us,
         }
     }
 
     pub fn start(&self) {
         let app_handle = self.app_handle.clone();
+        let last_copied_by_us = self.last_copied_by_us.clone();
 
         // Start monitoring thread
         thread::spawn(move || {
@@ -40,20 +44,43 @@ impl ClipboardMonitor {
                 // Check for text changes
                 if let Ok(text) = clipboard.get_text() {
                     if text != last_text && !text.is_empty() {
-                        log::info!("Text clipboard changed: {} chars", text.len());
-                        last_text = text.clone();
-
-                        // Save to storage
-                        let item = ClipItem {
-                            id: Uuid::new_v4().to_string(),
-                            content: text.into_bytes(),
-                            content_type: ContentType::Text,
-                            timestamp: Utc::now().timestamp(),
-                            is_pinned: false,
-                            pin_order: None,
+                        // Check if this was copied by us (to avoid re-capturing)
+                        let should_skip = {
+                            if let Ok(last_copied) = last_copied_by_us.lock() {
+                                if let Some(ref copied_text) = *last_copied {
+                                    if copied_text == &text {
+                                        log::info!("⏭️ Skipping self-copied text ({} chars)", text.len());
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                } else {
+                                    false
+                                }
+                            } else {
+                                false
+                            }
                         };
 
-                        Self::save_to_storage(&app_handle, item);
+                        if !should_skip {
+                            log::info!("📋 Text clipboard changed: {} chars", text.len());
+                            last_text = text.clone();
+
+                            // Save to storage
+                            let item = ClipItem {
+                                id: Uuid::new_v4().to_string(),
+                                content: text.into_bytes(),
+                                content_type: ContentType::Text,
+                                timestamp: Utc::now().timestamp(),
+                                is_pinned: false,
+                                pin_order: None,
+                            };
+
+                            Self::save_to_storage(&app_handle, item);
+                        } else {
+                            // Still update last_text to avoid detecting it again
+                            last_text = text.clone();
+                        }
                     }
                 }
 
