@@ -20,8 +20,21 @@ const formattedTime = $derived(() => {
 // Get preview text
 const previewText = $derived(() => {
   if (item.contentType !== 'Text') return '';
-  const text = new TextDecoder().decode(item.content);
-  return text.slice(0, 200);
+
+  // Check if content is empty
+  if (!item.content || item.content.length === 0) {
+    console.warn('Empty content for item:', item.id);
+    return '[内容为空]';
+  }
+
+  try {
+    const text = new TextDecoder().decode(item.content);
+    console.log('Decoded text:', text.slice(0, 50));
+    return text.slice(0, 200);
+  } catch (e) {
+    console.error('Failed to decode content:', e);
+    return '[解码失败]';
+  }
 });
 
 async function handleCopy() {

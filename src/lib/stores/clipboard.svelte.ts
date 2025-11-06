@@ -61,12 +61,14 @@ class ClipboardStore {
   async loadHistory() {
     this.isLoading = true;
     try {
+      console.log('🔄 Loading clipboard history...');
       const history = await invoke<ClipItem[]>('get_clipboard_history', {
         limit: 100,
       });
+      console.log(`✅ Loaded ${history.length} clipboard items`);
       this.items = history;
     } catch (error) {
-      console.error('Failed to load clipboard history:', error);
+      console.error('❌ Failed to load clipboard history:', error);
     } finally {
       this.isLoading = false;
     }

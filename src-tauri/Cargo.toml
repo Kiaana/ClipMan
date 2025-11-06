@@ -12,12 +12,13 @@ tauri-build = { version = "2.5", features = [] }
 
 [dependencies]
 # Tauri Core
-tauri = { version = "2.9", features = ["tray-icon", "devtools"] }
+tauri = { version = "2.9", features = [ "tray-icon", "devtools"] }
 tauri-plugin-shell = "2.3"
 tauri-plugin-dialog = "2.4"
 tauri-plugin-fs = "2.4"
 tauri-plugin-clipboard-manager = "2.3"
 tauri-plugin-global-shortcut = "2.2"
+tauri-plugin-store = "2.3"
 
 # Clipboard & System
 arboard = "3.4"
@@ -49,6 +50,11 @@ env_logger = "0.11"
 
 # Image processing
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+
+# macOS specific
+[target.'cfg(target_os = "macos")'.dependencies]
+cocoa = "0.25"
+objc = "0.2"
 
 [features]
 default = ["custom-protocol"]
