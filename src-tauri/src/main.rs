@@ -271,8 +271,9 @@ fn main() {
             // Build initial tray menu
             let menu = build_tray_menu(&app.handle())?;
 
-            // Create system tray
-            let _tray = TrayIconBuilder::new()
+            // Create system tray with ID
+            let tray_id = "main";
+            let _tray = TrayIconBuilder::with_id(tray_id)
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
                 .on_menu_event(move |app, event| {
@@ -317,7 +318,6 @@ fn main() {
                         log::debug!("Tray left-clicked - menu will show automatically");
                     }
                 })
-                .id("main")
                 .build(app)?;
 
             log::info!("System tray initialized");
