@@ -265,16 +265,17 @@ async fn update_settings(
         log::info!("Hotkey changed from '{}' to '{}', re-registering...", old_shortcut, new_shortcut);
 
         // 注销旧热键
-        if let Err(e) = app.global_shortcut().unregister(&old_shortcut) {
+        if let Err(e) = app.global_shortcut().unregister(old_shortcut.as_str()) {
             log::warn!("Failed to unregister old shortcut '{}': {}", old_shortcut, e);
         }
 
         // 注册新热键
         let app_clone = app.clone();
+        let new_shortcut_clone = new_shortcut.clone();
         app.global_shortcut()
-            .on_shortcut(&new_shortcut, move |_app, _shortcut, event| {
+            .on_shortcut(new_shortcut.as_str(), move |_app, _shortcut, event| {
                 if event.state == ShortcutState::Pressed {
-                    log::info!("Global shortcut triggered: {}", new_shortcut);
+                    log::info!("Global shortcut triggered: {}", new_shortcut_clone);
                     if let Some(window) = app_clone.get_webview_window("main") {
                         let _ = window.show();
                         let _ = window.set_focus();
@@ -409,7 +410,8 @@ fn main() {
 
             let app_handle_hotkey = app.handle().clone();
             let shortcut_display = current_shortcut.clone();
-            app.global_shortcut().on_shortcut(&current_shortcut, move |_app, _shortcut, event| {
+            let shortcut_str = current_shortcut.clone();
+            app.global_shortcut().on_shortcut(current_shortcut.as_str(), move |_app, _shortcut, event| {
                 if event.state == ShortcutState::Pressed {
                     log::info!("Global shortcut triggered: {}", shortcut_display);
 
@@ -420,11 +422,11 @@ fn main() {
                     }
                 }
             }).map_err(|e| {
-                log::error!("Failed to register global shortcut '{}': {}", current_shortcut, e);
+                log::error!("Failed to register global shortcut '{}': {}", shortcut_str, e);
                 e
             })?;
 
-            log::info!("Global shortcuts registered: {}", current_shortcut);
+            log::info!("Global shortcuts registered: {}", shortcut_str);
 
             Ok(())
         })
