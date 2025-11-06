@@ -164,6 +164,9 @@ const shortcutPresets = [
     margin: 0 auto;
     padding: 2rem;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    height: 100vh;
+    overflow-y: auto;
+    box-sizing: border-box;
 }
 
 header {

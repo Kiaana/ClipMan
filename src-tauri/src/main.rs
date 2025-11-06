@@ -240,6 +240,21 @@ async fn get_settings(
 }
 
 #[tauri::command]
+async fn check_clipboard_permission() -> Result<String, String> {
+    use arboard::Clipboard;
+
+    match Clipboard::new() {
+        Ok(mut clipboard) => {
+            match clipboard.get_text() {
+                Ok(_) => Ok("granted".to_string()),
+                Err(e) => Ok(format!("denied: {}", e)),
+            }
+        }
+        Err(e) => Err(format!("Failed to create clipboard: {}", e)),
+    }
+}
+
+#[tauri::command]
 async fn update_settings(
     app: AppHandle,
     state: State<'_, AppState>,
@@ -291,8 +306,27 @@ async fn update_settings(
 }
 
 fn main() {
-    env_logger::init();
+    env_logger::Builder::from_default_env()
+        .filter_level(log::LevelFilter::Debug)
+        .init();
     log::info!("ClipMan starting...");
+
+    // macOS 权限检查
+    #[cfg(target_os = "macos")]
+    {
+        use arboard::Clipboard;
+        log::info!("Running on macOS - checking clipboard access");
+
+        match Clipboard::new() {
+            Ok(mut clipboard) => {
+                match clipboard.get_text() {
+                    Ok(text) => log::info!("✅ Clipboard access OK, current content: {} chars", text.len()),
+                    Err(e) => log::warn!("⚠️ Cannot read clipboard: {}. May need accessibility permission.", e),
+                }
+            }
+            Err(e) => log::error!("❌ Failed to create clipboard instance: {}", e),
+        }
+    }
 
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -451,7 +485,8 @@ fn main() {
             delete_clip,
             get_pinned_clips,
             get_settings,
-            update_settings
+            update_settings,
+            check_clipboard_permission
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
