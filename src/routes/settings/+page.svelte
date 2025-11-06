@@ -92,7 +92,7 @@ const shortcutPresets = [
                 </div>
 
                 <div class="form-group">
-                    <label>快速选择：</label>
+                    <span class="form-label">快速选择：</span>
                     <div class="preset-buttons">
                         {#each shortcutPresets as preset}
                             <button
@@ -242,7 +242,8 @@ h1 {
     margin-bottom: 0;
 }
 
-label {
+label,
+.form-label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
