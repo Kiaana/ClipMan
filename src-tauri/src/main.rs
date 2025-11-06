@@ -32,6 +32,14 @@ fn set_activation_policy() {
     log::info!("macOS activation policy set to Accessory (menu bar only)");
 }
 
+// 辅助函数：安全获取 Mutex，即使它是 poisoned 状态
+fn safe_lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<T> {
+    mutex.lock().unwrap_or_else(|poisoned| {
+        log::warn!("⚠️ Recovered from poisoned lock");
+        poisoned.into_inner()
+    })
+}
+
 struct AppState {
     storage: Mutex<ClipStorage>,
     monitor: Mutex<Option<ClipboardMonitor>>,
@@ -93,7 +101,7 @@ fn get_or_create_encryption_key(app_data_dir: &PathBuf) -> Result<[u8; 32], Stri
 // 构建动态托盘菜单
 fn build_tray_menu(app: &AppHandle) -> Result<tauri::menu::Menu<tauri::Wry>, tauri::Error> {
     let state = app.state::<AppState>();
-    let storage = state.storage.lock().unwrap();
+    let storage = safe_lock(&state.storage);
 
     let mut menu_builder = MenuBuilder::new(app);
 
@@ -152,14 +160,18 @@ fn build_tray_menu(app: &AppHandle) -> Result<tauri::menu::Menu<tauri::Wry>, tau
     menu_builder.build()
 }
 
-// 截断内容用于菜单显示
+// 截断内容用于菜单显示（安全处理 Unicode 字符边界）
 fn truncate_content(content: &[u8], content_type: &ContentType, max_len: usize) -> String {
     match content_type {
         ContentType::Text => {
             let text = String::from_utf8_lossy(content);
             let text = text.replace('\n', " ").replace('\r', "");
-            if text.len() > max_len {
-                format!("{}...", &text[..max_len])
+
+            // 安全截断：使用字符迭代器而不是字节索引
+            let char_count = text.chars().count();
+            if char_count > max_len {
+                let truncated: String = text.chars().take(max_len).collect();
+                format!("{}...", truncated)
             } else {
                 text.to_string()
             }
@@ -187,7 +199,7 @@ async fn get_clipboard_history(
     state: State<'_, AppState>,
     limit: Option<usize>,
 ) -> Result<Vec<ClipItem>, String> {
-    let storage = state.storage.lock().map_err(|e| e.to_string())?;
+    let storage = safe_lock(&state.storage);
     storage.get_recent(limit.unwrap_or(100))
         .map_err(|e| e.to_string())
 }
@@ -197,7 +209,7 @@ async fn search_clips(
     state: State<'_, AppState>,
     query: String,
 ) -> Result<Vec<ClipItem>, String> {
-    let storage = state.storage.lock().map_err(|e| e.to_string())?;
+    let storage = safe_lock(&state.storage);
     storage.search(&query)
         .map_err(|e| e.to_string())
 }
@@ -209,7 +221,7 @@ async fn toggle_pin(
     id: String,
     is_pinned: bool,
 ) -> Result<(), String> {
-    let storage = state.storage.lock().map_err(|e| e.to_string())?;
+    let storage = safe_lock(&state.storage);
     storage.update_pin(&id, is_pinned)
         .map_err(|e| e.to_string())?;
 
@@ -226,7 +238,7 @@ async fn delete_clip(
     state: State<'_, AppState>,
     id: String,
 ) -> Result<(), String> {
-    let storage = state.storage.lock().map_err(|e| e.to_string())?;
+    let storage = safe_lock(&state.storage);
     storage.delete(&id)
         .map_err(|e| e.to_string())?;
 
@@ -241,7 +253,7 @@ async fn delete_clip(
 async fn get_pinned_clips(
     state: State<'_, AppState>,
 ) -> Result<Vec<ClipItem>, String> {
-    let storage = state.storage.lock().map_err(|e| e.to_string())?;
+    let storage = safe_lock(&state.storage);
     storage.get_pinned()
         .map_err(|e| e.to_string())
 }
@@ -266,6 +278,22 @@ async fn check_clipboard_permission() -> Result<String, String> {
         }
         Err(e) => Err(format!("Failed to create clipboard: {}", e)),
     }
+}
+
+#[tauri::command]
+async fn clear_all_history(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    log::info!("Clearing all clipboard history (user requested)");
+    let storage = safe_lock(&state.storage);
+    storage.clear_all().map_err(|e| e.to_string())?;
+
+    // 更新托盘菜单
+    drop(storage);
+    update_tray_menu(&app);
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -468,7 +496,7 @@ fn main() {
             let monitor = ClipboardMonitor::new(app_handle.clone(), last_copied_by_us.clone());
             monitor.start();
 
-            *state.monitor.lock().unwrap() = Some(monitor);
+            *safe_lock(&state.monitor) = Some(monitor);
 
             log::info!("Clipboard monitoring started");
 
@@ -506,7 +534,8 @@ fn main() {
             get_pinned_clips,
             get_settings,
             update_settings,
-            check_clipboard_permission
+            check_clipboard_permission,
+            clear_all_history
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -517,7 +546,7 @@ fn copy_clip_to_clipboard(app: &AppHandle, clip_id: &str) -> Result<(), String> 
     use arboard::Clipboard;
 
     let state = app.state::<AppState>();
-    let storage = state.storage.lock().map_err(|e| e.to_string())?;
+    let storage = safe_lock(&state.storage);
 
     // 从数据库获取完整内容
     let items = storage.get_recent(100).map_err(|e| e.to_string())?;
@@ -534,7 +563,7 @@ fn copy_clip_to_clipboard(app: &AppHandle, clip_id: &str) -> Result<(), String> 
 
             // Mark this text as "copied by us" so monitor doesn't re-capture it
             {
-                let mut last_copied = state.last_copied_by_us.lock().map_err(|e| e.to_string())?;
+                let mut last_copied = safe_lock(&state.last_copied_by_us);
                 *last_copied = Some(text.clone());
             }
 
@@ -545,9 +574,8 @@ fn copy_clip_to_clipboard(app: &AppHandle, clip_id: &str) -> Result<(), String> 
             let last_copied_by_us = state.last_copied_by_us.clone();
             tokio::spawn(async move {
                 tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-                if let Ok(mut last_copied) = last_copied_by_us.lock() {
-                    *last_copied = None;
-                }
+                let mut last_copied = safe_lock(&last_copied_by_us);
+                *last_copied = None;
             });
         }
         ContentType::Image => {

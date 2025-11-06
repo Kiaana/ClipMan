@@ -168,8 +168,18 @@ impl ClipStorage {
 
         let items = stmt.query_map([limit], |row| {
             let encrypted_content: Vec<u8> = row.get(1)?;
-            let content = self.decrypt_content(encrypted_content)?;
+            let content = match self.decrypt_content(encrypted_content.clone()) {
+                Ok(c) => c,
+                Err(e) => {
+                    // 解密失败，记录错误并跳过此项
+                    let id: String = row.get(0).unwrap_or_else(|_| "unknown".to_string());
+                    log::warn!("⚠️ Failed to decrypt item {}: {:?}. Skipping.", id, e);
+                    // 返回空内容以避免整个查询失败
+                    Vec::new()
+                }
+            };
 
+            // 如果内容为空（解密失败），我们仍然返回item但标记为无效
             Ok(ClipItem {
                 id: row.get(0)?,
                 content,
@@ -180,7 +190,14 @@ impl ClipStorage {
             })
         })?;
 
-        items.collect()
+        // 过滤掉解密失败的项目（内容为空）
+        items.filter_map(|item| {
+            match item {
+                Ok(clip_item) if !clip_item.content.is_empty() => Some(Ok(clip_item)),
+                Ok(_) => None, // 跳过空内容的项目
+                Err(e) => Some(Err(e)),
+            }
+        }).collect()
     }
 
     pub fn search(&self, query: &str) -> Result<Vec<ClipItem>> {
@@ -195,7 +212,14 @@ impl ClipStorage {
 
         let items = stmt.query_map([query], |row| {
             let encrypted_content: Vec<u8> = row.get(1)?;
-            let content = self.decrypt_content(encrypted_content)?;
+            let content = match self.decrypt_content(encrypted_content.clone()) {
+                Ok(c) => c,
+                Err(e) => {
+                    let id: String = row.get(0).unwrap_or_else(|_| "unknown".to_string());
+                    log::warn!("⚠️ Failed to decrypt search result {}: {:?}. Skipping.", id, e);
+                    Vec::new()
+                }
+            };
 
             Ok(ClipItem {
                 id: row.get(0)?,
@@ -207,7 +231,13 @@ impl ClipStorage {
             })
         })?;
 
-        items.collect()
+        items.filter_map(|item| {
+            match item {
+                Ok(clip_item) if !clip_item.content.is_empty() => Some(Ok(clip_item)),
+                Ok(_) => None,
+                Err(e) => Some(Err(e)),
+            }
+        }).collect()
     }
 
     pub fn update_pin(&self, id: &str, is_pinned: bool) -> Result<()> {
@@ -237,6 +267,12 @@ impl ClipStorage {
         Ok(())
     }
 
+    pub fn clear_all(&self) -> Result<()> {
+        log::info!("🗑️ Clearing all clipboard history");
+        self.conn.execute("DELETE FROM clips", [])?;
+        Ok(())
+    }
+
     pub fn get_pinned(&self) -> Result<Vec<ClipItem>> {
         let mut stmt = self.conn.prepare(
             "SELECT id, content, content_type, timestamp, is_pinned, pin_order
@@ -247,7 +283,14 @@ impl ClipStorage {
 
         let items = stmt.query_map([], |row| {
             let encrypted_content: Vec<u8> = row.get(1)?;
-            let content = self.decrypt_content(encrypted_content)?;
+            let content = match self.decrypt_content(encrypted_content.clone()) {
+                Ok(c) => c,
+                Err(e) => {
+                    let id: String = row.get(0).unwrap_or_else(|_| "unknown".to_string());
+                    log::warn!("⚠️ Failed to decrypt pinned item {}: {:?}. Skipping.", id, e);
+                    Vec::new()
+                }
+            };
 
             Ok(ClipItem {
                 id: row.get(0)?,
@@ -259,6 +302,12 @@ impl ClipStorage {
             })
         })?;
 
-        items.collect()
+        items.filter_map(|item| {
+            match item {
+                Ok(clip_item) if !clip_item.content.is_empty() => Some(Ok(clip_item)),
+                Ok(_) => None,
+                Err(e) => Some(Err(e)),
+            }
+        }).collect()
     }
 }

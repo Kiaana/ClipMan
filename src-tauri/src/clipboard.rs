@@ -121,12 +121,12 @@ impl ClipboardMonitor {
 
         let state = app_handle.state::<AppState>();
         let result = {
-            let storage = state.storage.lock();
-            if let Ok(storage) = storage {
-                storage.insert(&item)
-            } else {
-                return;
-            }
+            // 使用 unwrap_or_else 处理 poisoned lock
+            let storage = state.storage.lock().unwrap_or_else(|poisoned| {
+                log::warn!("⚠️ Recovered from poisoned lock in clipboard monitor");
+                poisoned.into_inner()
+            });
+            storage.insert(&item)
         };
 
         if let Err(e) = result {
