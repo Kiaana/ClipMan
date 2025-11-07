@@ -201,16 +201,19 @@ impl ClipStorage {
     }
 
     pub fn search(&self, query: &str) -> Result<Vec<ClipItem>> {
+        // FTS5 需要对特殊字符进行转义，或者使用简单的 LIKE 查询
+        // 对于用户输入，我们使用更简单的方法：直接搜索文本内容
+        log::info!("🔍 Searching for: {}", query);
+
         let mut stmt = self.conn.prepare(
-            "SELECT c.id, c.content, c.content_type, c.timestamp, c.is_pinned, c.pin_order
-             FROM clips c
-             JOIN clips_fts ON clips_fts.id = c.id
-             WHERE clips_fts MATCH ?1
-             ORDER BY c.timestamp DESC
-             LIMIT 50"
+            "SELECT id, content, content_type, timestamp, is_pinned, pin_order
+             FROM clips
+             WHERE content_type = 'text'
+             ORDER BY timestamp DESC
+             LIMIT 100"
         )?;
 
-        let items = stmt.query_map([query], |row| {
+        let items = stmt.query_map([], |row| {
             let encrypted_content: Vec<u8> = row.get(1)?;
             let content = match self.decrypt_content(encrypted_content.clone()) {
                 Ok(c) => c,
@@ -231,9 +234,22 @@ impl ClipStorage {
             })
         })?;
 
+        // 在内存中过滤搜索结果
+        let query_lower = query.to_lowercase();
         items.filter_map(|item| {
             match item {
-                Ok(clip_item) if !clip_item.content.is_empty() => Some(Ok(clip_item)),
+                Ok(clip_item) if !clip_item.content.is_empty() => {
+                    // 解码内容并检查是否包含查询字符串
+                    if let Ok(text) = String::from_utf8(clip_item.content.clone()) {
+                        if text.to_lowercase().contains(&query_lower) {
+                            Some(Ok(clip_item))
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                }
                 Ok(_) => None,
                 Err(e) => Some(Err(e)),
             }

@@ -11,7 +11,7 @@ use storage::{ClipStorage, ClipItem, ContentType};
 use crypto::Crypto;
 use settings::{Settings, SettingsManager};
 use tauri::{
-    AppHandle, Manager, State,
+    AppHandle, Manager, State, Emitter,
     menu::{MenuBuilder, MenuItemBuilder},
     tray::{TrayIconBuilder, TrayIconEvent, MouseButton, MouseButtonState},
 };
@@ -309,6 +309,11 @@ async fn clear_non_pinned_history(
     // 更新托盘菜单
     drop(storage);
     update_tray_menu(&app);
+
+    // 发送事件通知前端更新
+    if let Err(e) = app.emit("history-cleared", ()) {
+        log::error!("Failed to emit history-cleared event: {}", e);
+    }
 
     Ok(())
 }

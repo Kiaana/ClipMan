@@ -69,10 +69,22 @@ class ClipboardStore {
     await this.loadHistory();
 
     // Listen for clipboard changes from Rust backend
-    this.unlisten = await listen<ClipItem>('clipboard-changed', (event) => {
+    const unlistenClipboard = await listen<ClipItem>('clipboard-changed', (event) => {
       // Add new item to the beginning
       this.items = [event.payload, ...this.items];
     });
+
+    // Listen for history cleared event from menu bar
+    const unlistenHistoryCleared = await listen('history-cleared', async () => {
+      console.log('📢 History cleared from menu bar, reloading...');
+      await this.loadHistory();
+    });
+
+    // Store both unlisten functions
+    this.unlisten = () => {
+      unlistenClipboard();
+      unlistenHistoryCleared();
+    };
   }
 
   destroy() {
