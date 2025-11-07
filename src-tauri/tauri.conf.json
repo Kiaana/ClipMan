@@ -53,6 +53,14 @@
   "plugins": {
     "shell": {
       "open": true
+    },
+    "updater": {
+      "active": true,
+      "pubkey": "",
+      "endpoints": [
+        "https://api.github.com/repos/{{owner}}/{{repo}}/releases/latest"
+      ],
+      "dialog": false
     }
   }
 }
