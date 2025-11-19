@@ -437,8 +437,10 @@ async fn install_update(app: AppHandle) -> Result<(), String> {
                             log::info!("Download complete, installing...");
                         }).await {
                             Ok(_) => {
-                                log::info!("Update installed successfully. App will restart.");
-                                Ok(())
+                                log::info!("Update installed successfully. Restarting app...");
+                                // Restart the application to apply the update
+                                // Note: restart() returns ! (never), so code after it is unreachable
+                                app.restart();
                             }
                             Err(e) => {
                                 log::error!("Failed to download/install update: {}", e);
