@@ -88,6 +88,9 @@ async function checkForUpdates() {
     } catch (err) {
         console.error('Failed to check for updates:', err);
         updateMessage = '检查更新失败: ' + err;
+        if (err.toString().includes('Not Found') || err.toString().includes('404')) {
+            updateMessage = '检查更新失败: 未找到更新信息 (可能是尚未发布新版本)';
+        }
     } finally {
         checkingUpdate = false;
     }
@@ -568,6 +571,10 @@ small {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
+    min-width: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .btn-update {
