@@ -5,10 +5,16 @@ let { placeholder = '搜索剪切板历史...' } = $props();
 
 let inputValue = $state('');
 
+let timer: number;
+
 function handleInput(event: Event) {
   const target = event.target as HTMLInputElement;
   inputValue = target.value;
-  clipboardStore.search(inputValue);
+  
+  clearTimeout(timer);
+  timer = setTimeout(() => {
+    clipboardStore.search(inputValue);
+  }, 300);
 }
 
 function clearSearch() {

@@ -5,6 +5,7 @@ import SearchBar from '$lib/components/SearchBar.svelte';
 import ClipboardItem from '$lib/components/ClipboardItem.svelte';
 import SettingsPage from './settings/+page.svelte';
 import PermissionCheck from '$lib/components/PermissionCheck.svelte';
+import Toast from '$lib/components/Toast.svelte';
 
 // Reactive state showing pinned vs all
 let showPinned = $state(false);
@@ -22,6 +23,7 @@ const displayItems = $derived(
 {:else}
   <div class="app">
     <PermissionCheck />
+    <Toast />
     <header class="app-header">
       <h1 class="app-title">ClipMan</h1>
       <div class="header-actions">

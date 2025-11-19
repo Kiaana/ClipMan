@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { ClipItem } from '$lib/stores/clipboard.svelte';
 import { clipboardStore } from '$lib/stores/clipboard.svelte';
+import { toastStore } from '$lib/stores/toast.svelte';
 
 let { item }: { item: ClipItem } = $props();
 
@@ -22,6 +23,9 @@ function decodeContent(content: number[] | string): Uint8Array {
 let formattedTime = $state('');
 let previewText = $state('');
 let imageDataUrl = $state('');
+
+// Track the last created URL for cleanup (non-reactive to avoid loops)
+let lastObjectUrl: string | undefined;
 
 // Update values when item changes
 $effect(() => {
@@ -54,32 +58,51 @@ $effect(() => {
     previewText = ''; // Clear previewText if not text content
   }
 
-  // Convert image to data URL
+  // Convert image to Blob URL (much faster than Base64)
   if (item.contentType === 'image') {
     try {
-      let base64: string;
+      let blob: Blob;
       if (Array.isArray(item.content)) {
         const bytes = new Uint8Array(item.content);
-        let binary = '';
-        for (let i = 0; i < bytes.length; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        base64 = btoa(binary);
+        blob = new Blob([bytes], { type: 'image/png' });
       } else {
-        base64 = item.content;
+        // Fallback for base64 string
+        const binary = atob(item.content);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        blob = new Blob([bytes], { type: 'image/png' });
       }
-      imageDataUrl = `data:image/png;base64,${base64}`;
+      
+      // Revoke old URL if exists
+      if (lastObjectUrl) {
+        URL.revokeObjectURL(lastObjectUrl);
+      }
+      
+      lastObjectUrl = URL.createObjectURL(blob);
+      imageDataUrl = lastObjectUrl;
     } catch (e) {
       console.error('Failed to convert image:', e);
       imageDataUrl = '';
     }
   } else {
-    imageDataUrl = ''; // Clear imageDataUrl if not image content
+    imageDataUrl = ''; 
   }
+});
+
+// Cleanup on destroy
+$effect.root(() => {
+  return () => {
+    if (lastObjectUrl) {
+      URL.revokeObjectURL(lastObjectUrl);
+    }
+  };
 });
 
 async function handleCopy() {
   await clipboardStore.copyToClipboard(item);
+  toastStore.add('已复制到剪切板', 'success');
 }
 
 async function handleTogglePin() {
