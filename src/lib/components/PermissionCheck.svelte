@@ -5,7 +5,7 @@
   import { AlertTriangle, RefreshCw } from 'lucide-svelte';
 
   let hasPermission = $state(true);
-  let isChecking = $state(true);
+  let isChecking = $state(true); // Used for future loading state UI
   let errorMessage = $state('');
 
   async function checkPermission() {
@@ -77,11 +77,12 @@
                 <div class="mt-4">
                     <Button 
                         onclick={checkPermission}
+                        disabled={isChecking}
                         class="bg-amber-500 hover:bg-amber-600 text-white border-none"
                         size="sm"
                     >
-                        <RefreshCw class="h-4 w-4 mr-2" />
-                        重新检查
+                        <RefreshCw class="h-4 w-4 mr-2 {isChecking ? 'animate-spin' : ''}" />
+                        {isChecking ? '检查中...' : '重新检查'}
                     </Button>
                 </div>
             </div>
