@@ -8,7 +8,6 @@
   import PermissionCheck from "$lib/components/PermissionCheck.svelte";
   import Toast from "$lib/components/Toast.svelte";
   import Button from "$lib/components/ui/Button.svelte";
-  import VirtualList from "$lib/components/VirtualList.svelte";
   import {
     Sun,
     Moon,
@@ -207,20 +206,10 @@
           </div>
         </div>
 
-        <div class="flex-1 min-h-0">
-          <VirtualList
-            items={displayItems}
-            estimateHeight={120}
-            class="p-4 pb-8"
-          >
-            {#snippet children(
-              item: import("$lib/stores/clipboard.svelte").ClipItem,
-            )}
-              <div class="mb-2">
-                <ClipboardItem {item} />
-              </div>
-            {/snippet}
-          </VirtualList>
+        <div class="flex-1 overflow-y-auto p-4 pb-8 space-y-2">
+          {#each displayItems as item (item.id)}
+            <ClipboardItem {item} />
+          {/each}
         </div>
       {/if}
     </main>
