@@ -18,6 +18,8 @@
     "clipboard-manager:default",
     "global-shortcut:default",
     "store:default",
-    "updater:default"
+    "updater:default",
+    "notification:default",
+    "notification:allow-is-permission-granted"
   ]
 }
