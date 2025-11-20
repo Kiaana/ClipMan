@@ -489,9 +489,13 @@
                     </h2>
 
                     <div class="space-y-2">
-                        <label class="text-sm font-medium">当前位置:</label>
+                        <label
+                            for="current-data-path"
+                            class="text-sm font-medium">当前位置:</label
+                        >
                         <div class="flex items-center gap-2">
                             <Input
+                                id="current-data-path"
                                 value={currentDataPath}
                                 readonly
                                 class="flex-1 text-xs"
