@@ -25,11 +25,8 @@ use std::path::PathBuf;
 use lru::LruCache;
 use std::num::NonZeroUsize;
 
-// Tray menu configuration constants
-const MAX_PINNED_IN_TRAY: usize = 5;
-const MAX_RECENT_IN_TRAY: usize = 20;
-const RECENT_ITEMS_QUERY_LIMIT: usize = 30;
-// MAX_TEXT_LENGTH_IN_TRAY is now in user settings
+// Tray menu configuration
+// MAX_PINNED_IN_TRAY and MAX_RECENT_IN_TRAY are now in user settings
 const TRAY_ICON_SIZE: u32 = 32;
 const ICON_CACHE_SIZE: usize = 50;
 
@@ -224,24 +221,32 @@ fn add_clip_menu_item(
 fn build_tray_menu(app: &AppHandle) -> Result<tauri::menu::Menu<tauri::Wry>, tauri::Error> {
     let state = app.state::<AppState>();
     
+    // Get settings for tray menu limits
+    let settings = state.settings.get();
+    let max_pinned_in_tray = settings.max_pinned_in_tray;
+    let max_recent_in_tray = settings.max_recent_in_tray;
+    
+    // Calculate query limit (need more than display limit to filter out pinned items)
+    let query_limit = (max_recent_in_tray + max_pinned_in_tray).max(30);
+    
     // Quick lock acquisition - get data and release immediately
     let (pinned_items, recent_items) = {
         let storage = safe_lock(&state.storage);
         (
             storage.get_pinned().unwrap_or_default(),
-            storage.get_recent(RECENT_ITEMS_QUERY_LIMIT).unwrap_or_default(),
+            storage.get_recent(query_limit).unwrap_or_default(),
         )
     }; // Lock released here
     
     let mut menu_builder = MenuBuilder::new(app);
 
-    // Add pinned items (max 5)
-    let pinned_count = pinned_items.len().min(MAX_PINNED_IN_TRAY);
+    // Add pinned items
+    let pinned_count = pinned_items.len().min(max_pinned_in_tray);
     if pinned_count > 0 {
         let pinned_header = MenuItemBuilder::with_id("pinned_header", "置顶项").enabled(false).build(app)?;
         menu_builder = menu_builder.item(&pinned_header);
 
-        for item in pinned_items.iter().take(MAX_PINNED_IN_TRAY) {
+        for item in pinned_items.iter().take(max_pinned_in_tray) {
             let menu_item = add_clip_menu_item(app, item, &state.icon_cache)?;
             menu_builder = menu_builder.item(&*menu_item);
         }
@@ -249,10 +254,10 @@ fn build_tray_menu(app: &AppHandle) -> Result<tauri::menu::Menu<tauri::Wry>, tau
         menu_builder = menu_builder.separator();
     }
 
-    // Add recent items (max 20, excluding pinned)
+    // Add recent items (excluding pinned)
     let recent_unpinned: Vec<_> = recent_items.iter()
         .filter(|item| !item.is_pinned)
-        .take(MAX_RECENT_IN_TRAY)
+        .take(max_recent_in_tray)
         .collect();
 
     if !recent_unpinned.is_empty() {

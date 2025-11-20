@@ -23,6 +23,8 @@
         autoCleanup: boolean;
         trayTextLength: number;
         storeOriginalImage: boolean;
+        maxPinnedInTray: number;
+        maxRecentInTray: number;
     }
 
     interface UpdateInfo {
@@ -39,6 +41,8 @@
         autoCleanup: true,
         trayTextLength: 50,
         storeOriginalImage: false,
+        maxPinnedInTray: 5,
+        maxRecentInTray: 20,
     });
 
     let loading = $state(true);
@@ -306,6 +310,57 @@
                         />
                         <p class="text-xs text-muted-foreground">
                             根据个人喜好调整，建议 30-50 字符
+                        </p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <label
+                                for="max-pinned-tray"
+                                class="text-sm font-medium"
+                                >托盘菜单最多置顶项</label
+                            >
+                            <span class="text-sm font-bold text-primary"
+                                >{settings.maxPinnedInTray} 条</span
+                            >
+                        </div>
+                        <input
+                            id="max-pinned-tray"
+                            type="range"
+                            min="3"
+                            max="10"
+                            step="1"
+                            bind:value={settings.maxPinnedInTray}
+                            class="w-full accent-primary h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+                        />
+                        <p class="text-xs text-muted-foreground">
+                            控制托盘菜单中显示的置顶项数量 (3-10)
+                        </p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <label
+                                for="max-recent-tray"
+                                class="text-sm font-medium"
+                                >托盘菜单最多最近项</label
+                            >
+                            <span class="text-sm font-bold text-primary"
+                                >{settings.maxRecentInTray} 条</span
+                            >
+                        </div>
+                        <input
+                            id="max-recent-tray"
+                            type="range"
+                            min="10"
+                            max="50"
+                            step="5"
+                            bind:value={settings.maxRecentInTray}
+                            class="w-full accent-primary h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+                        />
+                        <p class="text-xs text-muted-foreground">
+                            控制托盘菜单中显示的最近项数量
+                            (10-50)，数量过多可能导致菜单超出屏幕
                         </p>
                     </div>
 

@@ -11,6 +11,8 @@ pub struct Settings {
     pub auto_cleanup: bool,
     pub tray_text_length: usize,
     pub store_original_image: bool,
+    pub max_pinned_in_tray: usize,
+    pub max_recent_in_tray: usize,
 }
 
 impl Default for Settings {
@@ -19,8 +21,10 @@ impl Default for Settings {
             global_shortcut: "CommandOrControl+Shift+V".to_string(),
             max_history_items: 100,
             auto_cleanup: true,
-            tray_text_length: 50,  // Unified default for all platforms
-            store_original_image: false, // Default to thumbnails for space
+            tray_text_length: 50,
+            store_original_image: false,
+            max_pinned_in_tray: 5,
+            max_recent_in_tray: 20,
         }
     }
 }
@@ -71,6 +75,18 @@ impl SettingsManager {
             }
         }
 
+        if let Some(max_pinned) = store.get("max_pinned_in_tray") {
+            if let Some(n) = max_pinned.as_u64() {
+                self.settings.lock().unwrap().max_pinned_in_tray = n as usize;
+            }
+        }
+
+        if let Some(max_recent) = store.get("max_recent_in_tray") {
+            if let Some(n) = max_recent.as_u64() {
+                self.settings.lock().unwrap().max_recent_in_tray = n as usize;
+            }
+        }
+
         log::info!("Settings loaded: {:?}", self.settings.lock().unwrap());
         Ok(())
     }
@@ -86,6 +102,8 @@ impl SettingsManager {
         store.set("auto_cleanup", serde_json::json!(settings.auto_cleanup));
         store.set("tray_text_length", serde_json::json!(settings.tray_text_length));
         store.set("store_original_image", serde_json::json!(settings.store_original_image));
+        store.set("max_pinned_in_tray", serde_json::json!(settings.max_pinned_in_tray));
+        store.set("max_recent_in_tray", serde_json::json!(settings.max_recent_in_tray));
 
         store.save().map_err(|e| format!("Failed to save store: {}", e))?;
 
@@ -115,5 +133,13 @@ impl SettingsManager {
 
     pub fn set_store_original_image(&self, store_original: bool) {
         self.settings.lock().unwrap().store_original_image = store_original;
+    }
+
+    pub fn set_max_pinned_in_tray(&self, max: usize) {
+        self.settings.lock().unwrap().max_pinned_in_tray = max;
+    }
+
+    pub fn set_max_recent_in_tray(&self, max: usize) {
+        self.settings.lock().unwrap().max_recent_in_tray = max;
     }
 }
