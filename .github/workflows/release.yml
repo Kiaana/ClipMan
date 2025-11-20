@@ -50,6 +50,27 @@ jobs:
       - name: install frontend dependencies
         run: bun install
 
+      - name: Extract release notes
+        id: release_notes
+        run: |
+          VERSION="${{ github.ref_name }}"
+          # Remove 'v' prefix to get version number
+          VERSION_NUM="${VERSION#v}"
+          NOTES_FILE="release_notes_${VERSION_NUM}.md"
+          
+          if [ -f "$NOTES_FILE" ]; then
+            echo "Found release notes file: $NOTES_FILE"
+            # Read file content and set as output
+            NOTES=$(cat "$NOTES_FILE")
+            # Escape special characters for GitHub Actions
+            echo "notes<<EOF" >> $GITHUB_OUTPUT
+            echo "$NOTES" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "No release notes file found: $NOTES_FILE"
+            echo "notes=See the assets to download this version and install." >> $GITHUB_OUTPUT
+          fi
+
       - uses: tauri-apps/tauri-action@dev
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -58,7 +79,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }} # Use the tag name that triggered the workflow
           releaseName: '${{ github.ref_name }}' # Version number only for Tauri updater compatibility
-          releaseBody: 'See the assets to download this version and install.'
+          releaseBody: ${{ steps.release_notes.outputs.notes }}
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
