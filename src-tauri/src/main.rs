@@ -752,7 +752,7 @@ async fn get_current_data_path(
 
 // 选择文件夹对话框
 #[tauri::command]
-async fn choose_data_folder(app: AppHandle) -> Result<Option<String>, String> {
+async fn choose_data_folder() -> Result<Option<String>, String> {
     let folder = tauri::async_runtime::spawn_blocking(move || {
         use rfd::FileDialog;
         
@@ -763,6 +763,38 @@ async fn choose_data_folder(app: AppHandle) -> Result<Option<String>, String> {
     .map_err(|e| format!("Failed to show folder dialog: {}", e))?;
     
     Ok(folder.map(|p| p.to_string_lossy().to_string()))
+}
+
+// 打开文件夹
+#[tauri::command]
+async fn open_folder(path: String) -> Result<(), String> {
+    use std::process::Command;
+    
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| format!("Failed to open folder: {}", e))?;
+    }
+    
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("explorer")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| format!("Failed to open folder: {}", e))?;
+    }
+    
+    #[cfg(target_os = "linux")]
+    {
+        Command::new("xdg-open")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| format!("Failed to open folder: {}", e))?;
+    }
+    
+    Ok(())
 }
 
 // 迁移数据到新位置
@@ -1033,6 +1065,7 @@ fn main() {
             install_update,
             get_current_data_path,
             choose_data_folder,
+            open_folder,
             migrate_data_location
         ])
         .run(tauri::generate_context!())

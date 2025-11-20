@@ -208,7 +208,12 @@
     // 打开数据文件夹
     async function openDataFolder() {
         if (currentDataPath) {
-            await invoke("open", { path: currentDataPath });
+            try {
+                await invoke("open_folder", { path: currentDataPath });
+            } catch (err) {
+                console.error("Failed to open folder:", err);
+                message = "打开文件夹失败: " + String(err);
+            }
         }
     }
 
@@ -485,7 +490,7 @@
 
                     <div class="space-y-2">
                         <label class="text-sm font-medium">当前位置:</label>
-                        <div class="flex gap-2">
+                        <div class="flex items-center gap-2">
                             <Input
                                 value={currentDataPath}
                                 readonly
