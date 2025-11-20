@@ -24,42 +24,10 @@ class ClipboardStore {
       .sort((a, b) => (a.pinOrder || 0) - (b.pinOrder || 0))
   );
 
-  // Helper: decode content (handles both array and base64 string)
-  private decodeContent(content: number[] | string): Uint8Array {
-    if (Array.isArray(content)) {
-      // Content is already a byte array
-      return new Uint8Array(content);
-    } else {
-      // Content is base64 string, decode it
-      const binaryString = atob(content);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      return bytes;
-    }
-  }
+
 
   // Derived state: filtered items based on search
-  filteredItems = $derived.by(() => {
-    if (!this.searchQuery) {
-      return this.items;
-    }
-
-    return this.items.filter((item) => {
-      if (item.contentType === 'text') {
-        try {
-          const bytes = this.decodeContent(item.content);
-          const text = new TextDecoder().decode(bytes);
-          return text.toLowerCase().includes(this.searchQuery.toLowerCase());
-        } catch (e) {
-          console.error('Failed to decode content for search:', e);
-          return false;
-        }
-      }
-      return false;
-    });
-  });
+  filteredItems = $derived(this.items);
 
   constructor() {
     this.initialize();
