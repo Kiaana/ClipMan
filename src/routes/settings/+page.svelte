@@ -665,23 +665,23 @@
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
     >
         <div
-            class="bg-background border border-border rounded-lg p-6 max-w-lg w-full mx-4 space-y-4"
+            class="bg-background border border-border rounded-lg p-6 max-w-lg w-full mx-4 space-y-4 shadow-xl"
         >
             <h3 class="text-lg font-semibold">确认数据迁移</h3>
 
             <div class="space-y-2 text-sm">
                 <div>
-                    <span class="text-muted-foreground">当前位置:</span>
+                    <span class="font-medium">当前位置:</span>
                     <p
-                        class="font-mono text-xs bg-muted p-2 rounded mt-1 break-all"
+                        class="font-mono text-xs bg-muted/50 text-foreground p-2 rounded mt-1 break-all border border-border"
                     >
                         {currentDataPath}
                     </p>
                 </div>
                 <div>
-                    <span class="text-muted-foreground">新位置:</span>
+                    <span class="font-medium">新位置:</span>
                     <p
-                        class="font-mono text-xs bg-muted p-2 rounded mt-1 break-all"
+                        class="font-mono text-xs bg-muted/50 text-foreground p-2 rounded mt-1 break-all border border-border"
                     >
                         {newDataPath}
                     </p>
@@ -689,7 +689,7 @@
             </div>
 
             <div
-                class="flex items-start gap-2 p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded"
+                class="flex items-start gap-2 p-3 bg-yellow-50 dark:bg-yellow-950/50 rounded border border-yellow-200 dark:border-yellow-800"
             >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -701,7 +701,7 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    class="text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                    class="text-yellow-700 dark:text-yellow-500 flex-shrink-0"
                     ><path
                         d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"
                     /><line x1="12" x2="12" y1="9" y2="13" /><line
@@ -711,7 +711,7 @@
                         y2="17"
                     /></svg
                 >
-                <p class="text-sm text-yellow-800 dark:text-yellow-200">
+                <p class="text-sm text-yellow-900 dark:text-yellow-300">
                     数据迁移过程中，剪贴板监控将暂时停止。迁移完成后会自动恢复。
                 </p>
             </div>
@@ -721,7 +721,7 @@
                     type="checkbox"
                     id="delete-old-data"
                     bind:checked={deleteOldData}
-                    class="w-4 h-4 rounded border-input text-primary focus:ring-ring"
+                    class="w-4 h-4 rounded border-input text-primary focus:ring-2 focus:ring-ring"
                 />
                 <label
                     for="delete-old-data"
