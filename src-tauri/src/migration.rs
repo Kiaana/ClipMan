@@ -28,9 +28,11 @@ pub fn migrate_data(from: &Path, to: &Path, delete_old: bool) -> Result<(), Stri
     // Files to migrate
     let files_to_migrate = vec![
         "clipman.db",
-        "clipman.db-shm",  // SQLite shared memory (if exists)
-        "clipman.db-wal",  // SQLite write-ahead log (if exists)
-        ".clipman.key",
+        "clipman.db-shm",     // SQLite shared memory (if exists)
+        "clipman.db-wal",     // SQLite write-ahead log (if exists)
+        ".clipman.key",       // Encryption key
+        "settings.json",      // Settings store
+        "settings.dat",       // Settings store binary (if exists)
     ];
     
     // Copy files
@@ -61,10 +63,11 @@ pub fn migrate_data(from: &Path, to: &Path, delete_old: bool) -> Result<(), Stri
         }
     }
     
-    // Verify key file exists at destination
-    let key_file = to.join(".clipman.key");
-    if !key_file.exists() {
-        return Err("Migration failed: encryption key not found at destination".to_string());
+    // Verify at least the database or key file exists at destination    
+    // Verify database file was migrated successfully
+    let db_file = to.join("clipman.db");
+    if !db_file.exists() {
+        return Err("Migration failed: database file not found at destination".to_string());
     }
     
     log::info!("Data migration successful");
