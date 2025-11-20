@@ -28,7 +28,7 @@ use std::num::NonZeroUsize;
 const MAX_PINNED_IN_TRAY: usize = 5;
 const MAX_RECENT_IN_TRAY: usize = 20;
 const RECENT_ITEMS_QUERY_LIMIT: usize = 30;
-const MAX_TEXT_LENGTH_IN_TRAY: usize = 30;
+const MAX_TEXT_LENGTH_IN_TRAY: usize = 50;
 const TRAY_ICON_SIZE: u32 = 32;
 const ICON_CACHE_SIZE: usize = 50;
 
@@ -256,7 +256,7 @@ fn build_tray_menu(app: &AppHandle) -> Result<tauri::menu::Menu<tauri::Wry>, tau
     // Bottom actions
     menu_builder = menu_builder
         .separator()
-        .item(&MenuItemBuilder::with_id("clear_non_pinned", "清除非置顶").build(app)?)
+        .item(&MenuItemBuilder::with_id("clear_non_pinned", "清除").build(app)?)
         .item(&MenuItemBuilder::with_id("settings", "设置").build(app)?)
         .item(&MenuItemBuilder::with_id("quit", "退出").build(app)?);
 
@@ -276,11 +276,16 @@ fn truncate_content(content: &[u8], content_type: &ContentType, max_len: usize) 
                 .collect::<Vec<_>>()
                 .join(" ");
 
-            // Safe truncation by character count
+            // Smart truncation: show start...end for long text
             let char_count = text.chars().count();
             if char_count > max_len {
-                let truncated: String = text.chars().take(max_len).collect();
-                format!("{}...", truncated)
+                // Show first part and last part with ellipsis in between
+                let start_len = max_len * 2 / 3;  // Use 2/3 for start
+                let end_len = max_len - start_len - 3;  // Rest for end, minus "..."
+                
+                let start: String = text.chars().take(start_len).collect();
+                let end: String = text.chars().skip(char_count - end_len).collect();
+                format!("{}...{}", start, end)
             } else {
                 text
             }
