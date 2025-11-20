@@ -79,29 +79,36 @@ impl ClipboardHandler for Handler {
             if last_image.as_ref() != Some(&image_bytes) {
                 log::info!("Image clipboard changed: {} bytes", image_bytes.len());
 
-                // Check settings for image quality preference
-                let store_original = if let Some(state) = self.app_handle.try_state::<crate::AppState>() {
-                    state.settings.get().store_original_image
-                } else {
-                    false
-                };
+                // Spawn async task for image processing to avoid blocking
+                let app_handle = self.app_handle.clone();
+                let image_bytes_clone = image_bytes.clone();
+                
+                tauri::async_runtime::spawn(async move {
+                    // Check settings for image quality preference
+                    let store_original = if let Some(state) = app_handle.try_state::<crate::AppState>() {
+                        state.settings.get().store_original_image
+                    } else {
+                        false
+                    };
 
-                let content = if store_original {
-                    ClipboardMonitor::process_full_image(&image_bytes)
-                } else {
-                    ClipboardMonitor::create_thumbnail(&image_bytes)
-                };
+                    let content = if store_original {
+                        ClipboardMonitor::process_full_image(&image_bytes_clone)
+                    } else {
+                        ClipboardMonitor::create_thumbnail(&image_bytes_clone)
+                    };
 
-                let item = ClipItem {
-                    id: Uuid::new_v4().to_string(),
-                    content,
-                    content_type: ContentType::Image,
-                    timestamp: Utc::now().timestamp(),
-                    is_pinned: false,
-                    pin_order: None,
-                };
+                    let item = ClipItem {
+                        id: Uuid::new_v4().to_string(),
+                        content,
+                        content_type: ContentType::Image,
+                        timestamp: Utc::now().timestamp(),
+                        is_pinned: false,
+                        pin_order: None,
+                    };
 
-                ClipboardMonitor::save_to_storage(&self.app_handle, item);
+                    ClipboardMonitor::save_to_storage(&app_handle, item);
+                });
+
                 *last_image = Some(image_bytes);
             }
         }
@@ -219,30 +226,37 @@ impl ClipboardMonitor {
 
                 if last_image.as_ref() != Some(&image_bytes) {
                     log::info!("Image clipboard changed: {} bytes", image_bytes.len());
-                    last_image = Some(image_bytes.clone());
+                    
+                    // Spawn async task for image processing
+                    let app_handle_clone = app_handle.clone();
+                    let image_bytes_clone = image_bytes.clone();
+                    
+                    tauri::async_runtime::spawn(async move {
+                        let store_original = if let Some(state) = app_handle_clone.try_state::<crate::AppState>() {
+                            state.settings.get().store_original_image
+                        } else {
+                            false
+                        };
 
-                    let store_original = if let Some(state) = app_handle.try_state::<crate::AppState>() {
-                        state.settings.get().store_original_image
-                    } else {
-                        false
-                    };
+                        let content = if store_original {
+                            Self::process_full_image(&image_bytes_clone)
+                        } else {
+                            Self::create_thumbnail(&image_bytes_clone)
+                        };
 
-                    let content = if store_original {
-                        Self::process_full_image(&image_bytes)
-                    } else {
-                        Self::create_thumbnail(&image_bytes)
-                    };
+                        let item = ClipItem {
+                            id: Uuid::new_v4().to_string(),
+                            content,
+                            content_type: ContentType::Image,
+                            timestamp: Utc::now().timestamp(),
+                            is_pinned: false,
+                            pin_order: None,
+                        };
 
-                    let item = ClipItem {
-                        id: Uuid::new_v4().to_string(),
-                        content,
-                        content_type: ContentType::Image,
-                        timestamp: Utc::now().timestamp(),
-                        is_pinned: false,
-                        pin_order: None,
-                    };
-
-                    Self::save_to_storage(&app_handle, item);
+                        Self::save_to_storage(&app_handle_clone, item);
+                    });
+                    
+                    last_image = Some(image_bytes);
                 }
             }
 
