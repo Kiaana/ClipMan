@@ -330,9 +330,9 @@
                                         id="enable-autostart"
                                         type="checkbox"
                                         bind:checked={settings.enableAutostart}
-                                        class="w-11 h-6 appearance-none bg-muted rounded-full relative cursor-pointer transition-colors
+                                        class="w-11 h-6 appearance-none bg-gray-200 dark:bg-gray-700 rounded-full relative cursor-pointer transition-colors
                                                checked:bg-primary
-                                               before:content-[''] before:absolute before:top-1 before:left-1 before:w-4 before:h-4 before:bg-white before:rounded-full before:transition-transform
+                                               before:content-[''] before:absolute before:top-1 before:left-1 before:w-4 before:h-4 before:bg-white checked:before:bg-primary-foreground before:rounded-full before:transition-transform
                                                checked:before:translate-x-5"
                                     />
                                 </div>
@@ -439,9 +439,9 @@
                                         id="auto-cleanup"
                                         type="checkbox"
                                         bind:checked={settings.autoCleanup}
-                                        class="w-11 h-6 appearance-none bg-muted rounded-full relative cursor-pointer transition-colors
+                                        class="w-11 h-6 appearance-none bg-gray-200 dark:bg-gray-700 rounded-full relative cursor-pointer transition-colors
                                                checked:bg-primary
-                                               before:content-[''] before:absolute before:top-1 before:left-1 before:w-4 before:h-4 before:bg-white before:rounded-full before:transition-transform
+                                               before:content-[''] before:absolute before:top-1 before:left-1 before:w-4 before:h-4 before:bg-white checked:before:bg-primary-foreground before:rounded-full before:transition-transform
                                                checked:before:translate-x-5"
                                     />
                                 </div>
@@ -466,9 +466,9 @@
                                         bind:checked={
                                             settings.storeOriginalImage
                                         }
-                                        class="w-11 h-6 appearance-none bg-muted rounded-full relative cursor-pointer transition-colors
+                                        class="w-11 h-6 appearance-none bg-gray-200 dark:bg-gray-700 rounded-full relative cursor-pointer transition-colors
                                                checked:bg-primary
-                                               before:content-[''] before:absolute before:top-1 before:left-1 before:w-4 before:h-4 before:bg-white before:rounded-full before:transition-transform
+                                               before:content-[''] before:absolute before:top-1 before:left-1 before:w-4 before:h-4 before:bg-white checked:before:bg-primary-foreground before:rounded-full before:transition-transform
                                                checked:before:translate-x-5"
                                     />
                                 </div>
@@ -661,6 +661,20 @@
                                         >
                                             高效的剪贴板管理工具
                                         </p>
+                                        <div
+                                            class="flex items-center gap-2 mt-1"
+                                        >
+                                            <span
+                                                class="text-xs bg-muted px-2 py-0.5 rounded text-muted-foreground"
+                                                >v1.7.0</span
+                                            >
+                                            <a
+                                                href="https://github.com/Kiaana/ClipMan"
+                                                target="_blank"
+                                                class="text-xs text-primary hover:underline"
+                                                >GitHub 仓库</a
+                                            >
+                                        </div>
                                     </div>
                                 </div>
 
