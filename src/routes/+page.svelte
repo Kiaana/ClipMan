@@ -19,7 +19,9 @@
     FileText,
     Image as ImageIcon,
     Loader2,
+    Heart,
   } from "lucide-svelte";
+  import { flip } from "svelte/animate";
 
   // Reactive state showing pinned vs all
   let showPinned = $state(false);
@@ -43,10 +45,13 @@
       (theme === "system" &&
         window.matchMedia("(prefers-color-scheme: dark)").matches);
 
-    if (isDark) {
+    // Remove all theme classes first
+    root.classList.remove("dark", "light-pink");
+
+    if (theme === "light-pink") {
+      root.classList.add("light-pink");
+    } else if (isDark) {
       root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
     }
 
     localStorage.setItem("theme", theme);
@@ -78,6 +83,8 @@
               <Sun class="h-4 w-4" />
             {:else if themeStore.current === "dark"}
               <Moon class="h-4 w-4" />
+            {:else if themeStore.current === "light-pink"}
+              <Heart class="h-4 w-4" />
             {:else}
               <Monitor class="h-4 w-4" />
             {/if}
@@ -208,7 +215,9 @@
 
         <div class="flex-1 overflow-y-auto p-4 pb-8 space-y-2">
           {#each displayItems as item (item.id)}
-            <ClipboardItem {item} />
+            <div animate:flip={{ duration: 300 }}>
+              <ClipboardItem {item} />
+            </div>
           {/each}
         </div>
       {/if}

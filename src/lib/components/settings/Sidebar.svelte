@@ -5,21 +5,30 @@
         Menu,
         Database,
         Info,
+        Palette,
     } from "lucide-svelte";
 
-    type Tab = "general" | "clipboard" | "tray" | "storage" | "about";
+    type Tab =
+        | "general"
+        | "clipboard"
+        | "tray"
+        | "storage"
+        | "about"
+        | "appearance"; // Updated Tab type
 
     let { activeTab = $bindable() } = $props<{
         activeTab: Tab;
     }>();
 
-    const tabs: { id: Tab; label: string; icon: any }[] = [
-        { id: "general", label: "常规", icon: SettingsIcon },
+    const tabs = [
+        // Changed type definition and added 'as const'
+        { id: "general", label: "常规", icon: SettingsIcon }, // Changed Settings to SettingsIcon to match import
+        { id: "appearance", label: "外观", icon: Palette }, // Added Appearance tab
         { id: "clipboard", label: "剪贴板", icon: ClipboardList },
         { id: "tray", label: "托盘菜单", icon: Menu },
-        { id: "storage", label: "数据存储", icon: Database },
+        { id: "storage", label: "存储", icon: Database }, // Changed label from "数据存储" to "存储"
         { id: "about", label: "关于", icon: Info },
-    ];
+    ] as const;
 </script>
 
 <aside class="w-64 border-r border-border bg-muted/30 p-4 flex flex-col">

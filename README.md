@@ -7,7 +7,7 @@
 **一个真正懂你需求的剪切板工具**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/Version-1.8.0-blue.svg)](https://github.com/Kiaana/ClipMan/releases)
+[![Version](https://img.shields.io/badge/Version-1.8.2-blue.svg)](https://github.com/Kiaana/ClipMan/releases)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/Kiaana/ClipMan)
 
 [下载使用](#-快速开始) · [功能特性](#-核心功能) · [开发文档](#-开发指南)
@@ -69,9 +69,10 @@
 - macOS 支持菜单栏模式，无 Dock 图标干扰
 
 ### 🎨 现代化界面
-简洁美观的用户界面，支持亮色/暗色模式。
+简洁美观的用户界面,支持多种主题模式。
 
 - 基于 Svelte 5 和 Tailwind CSS 4 构建
+- 支持浅色、深色、淡粉色主题和跟随系统
 - 流畅的动画和交互体验
 - 适配不同屏幕尺寸
 
@@ -120,10 +121,10 @@
 
 访问 [GitHub Releases](https://github.com/Kiaana/ClipMan/releases/latest) 下载最新版本：
 
-- **Windows**: `ClipMan_1.8.0_x64_en-US.msi`
-- **macOS (Apple Silicon)**: `ClipMan_1.8.0_aarch64.dmg`
-- **macOS (Intel)**: `ClipMan_1.8.0_x64.dmg`
-- **Linux**: `ClipMan_1.8.0_amd64.AppImage`
+- **Windows**: `ClipMan_1.8.2_x64_en-US.msi`
+- **macOS (Apple Silicon)**: `ClipMan_1.8.2_aarch64.dmg`
+- **macOS (Intel)**: `ClipMan_1.8.2_x64.dmg`
+- **Linux**: `ClipMan_1.8.2_amd64.AppImage`
 
 ### ⚙️ macOS 权限设置
 
@@ -146,10 +147,10 @@
 
 点击主界面右上角的"⚙️ 设置"按钮，可以配置：
 
-- **常规设置**：主题、语言、开机自启
+- **常规设置**：开机自启、全局快捷键
+- **外观设置**：主题选择（浅色/深色/淡粉色/跟随系统）
 - **剪切板设置**：最大历史数量、图片质量、清空历史
 - **托盘菜单**：显示数量、文本长度
-- **全局快捷键**：使用智能录入系统快速设置
 - **数据存储**：自定义存储位置、数据迁移
 
 ---

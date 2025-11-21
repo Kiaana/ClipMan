@@ -13,6 +13,7 @@
     import TraySettings from "$lib/components/settings/TraySettings.svelte";
     import StorageSettings from "$lib/components/settings/StorageSettings.svelte";
     import AboutSection from "$lib/components/settings/AboutSection.svelte";
+    import AppearanceSettings from "$lib/components/settings/AppearanceSettings.svelte";
 
     interface Settings {
         globalShortcut: string;
@@ -64,7 +65,13 @@
     let deleteOldData = $state(true);
 
     // 侧边栏导航状态
-    type Tab = "general" | "clipboard" | "tray" | "storage" | "about";
+    type Tab =
+        | "general"
+        | "clipboard"
+        | "tray"
+        | "storage"
+        | "about"
+        | "appearance";
     let activeTab = $state<Tab>("general");
 
     onMount(async () => {
@@ -271,6 +278,8 @@
                         <GeneralSettings bind:settings />
                     {:else if activeTab === "clipboard"}
                         <ClipboardSettings bind:settings />
+                    {:else if activeTab === "appearance"}
+                        <AppearanceSettings />
                     {:else if activeTab === "tray"}
                         <TraySettings bind:settings />
                     {:else if activeTab === "storage"}

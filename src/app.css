@@ -99,13 +99,48 @@
   --ring: hsl(240 4.9% 83.9%);
 }
 
+.light-pink {
+  /* Light Pink Theme Variables - Adjusted for "Cozy/Warm" look */
+  --background: hsl(340 30% 99%);
+  /* Very pale, warm pink */
+  --foreground: hsl(340 10% 10%);
+
+  --card: hsl(340 30% 99%);
+  --card-foreground: hsl(340 10% 10%);
+
+  --popover: hsl(340 30% 99%);
+  --popover-foreground: hsl(340 10% 10%);
+
+  --primary: hsl(340 40% 65%);
+  /* Muted, dusty rose */
+  --primary-foreground: hsl(340 10% 98%);
+
+  --secondary: hsl(340 20% 94%);
+  --secondary-foreground: hsl(340 30% 30%);
+
+  --muted: hsl(340 20% 94%);
+  --muted-foreground: hsl(340 10% 50%);
+
+  --accent: hsl(340 20% 94%);
+  --accent-foreground: hsl(340 30% 30%);
+
+  --destructive: hsl(0 84.2% 60.2%);
+  --destructive-foreground: hsl(0 0% 98%);
+
+  --border: hsl(340 20% 90%);
+  --input: hsl(340 20% 90%);
+  --ring: hsl(340 40% 65%);
+
+  --radius: 0.5rem;
+}
+
 @layer base {
   * {
     @apply border-border;
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground antialiased transition-colors duration-300;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }

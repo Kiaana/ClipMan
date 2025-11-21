@@ -6,6 +6,7 @@
   import Button from "./ui/Button.svelte";
   import {
     Copy,
+    Check,
     Pin,
     Trash2,
     FileText,
@@ -19,8 +20,73 @@
 
   let { item }: Props = $props();
 
-  // Track blob URLs for cleanup
-  let blobUrls: string[] = [];
+  // UI State
+  let isCopied = $state(false);
+  let copyTimeout: ReturnType<typeof setTimeout>;
+
+  // Derived: Decode text content
+  const decodedText = $derived.by(() => {
+    if (item.contentType !== "text") return "";
+
+    const content = item.content;
+    if (
+      !content ||
+      (Array.isArray(content) && content.length === 0) ||
+      (typeof content === "string" && content.length === 0)
+    ) {
+      return "[内容为空]";
+    }
+
+    try {
+      let bytes: Uint8Array;
+      if (Array.isArray(content)) {
+        bytes = new Uint8Array(content);
+      } else {
+        const binaryString = atob(content);
+        bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+      }
+      return new TextDecoder().decode(bytes);
+    } catch (e) {
+      console.error("Failed to decode text content:", e);
+      return "[解码失败]";
+    }
+  });
+
+  // Derived: Create image blob URL
+  // We use an effect to manage the lifecycle of the blob URL
+  let imageUrl = $state("");
+
+  $effect(() => {
+    if (item.contentType !== "image") return;
+
+    let url = "";
+    try {
+      let blob: Blob;
+      const content = item.content;
+
+      if (Array.isArray(content)) {
+        blob = new Blob([new Uint8Array(content)], { type: "image/png" });
+      } else {
+        const binary = atob(content);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        blob = new Blob([bytes], { type: "image/png" });
+      }
+      url = URL.createObjectURL(blob);
+      imageUrl = url;
+    } catch (e) {
+      console.error("Failed to create image URL:", e);
+    }
+
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  });
 
   function formatTime(timestamp: number): string {
     const date = new Date(timestamp * 1000);
@@ -46,54 +112,21 @@
     return date.toLocaleDateString("zh-CN");
   }
 
-  // Helper to decode UTF-8 text from byte array or base64 string
-  function decodeText(content: number[] | string): string {
-    if (
-      !content ||
-      (Array.isArray(content) && content.length === 0) ||
-      (typeof content === "string" && content.length === 0)
-    ) {
-      return "[内容为空]";
-    }
+  async function handleCopy() {
     try {
-      let bytes: Uint8Array;
-      if (Array.isArray(content)) {
-        bytes = new Uint8Array(content);
-      } else {
-        const binaryString = atob(content);
-        bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-      }
-      return new TextDecoder().decode(bytes);
-    } catch (e) {
-      console.error("Failed to decode text content:", e);
-      return "[解码失败]";
+      await clipboardStore.copyToClipboard(item);
+      isCopied = true;
+      clearTimeout(copyTimeout);
+      copyTimeout = setTimeout(() => {
+        isCopied = false;
+      }, 2000);
+    } catch (error) {
+      // Error handled in store
     }
   }
 
-  // Helper to create blob URL for images from byte array or base64 string
-  function createImageSrc(content: number[] | string): string {
-    let blob: Blob;
-    if (Array.isArray(content)) {
-      blob = new Blob([new Uint8Array(content)], { type: "image/png" });
-    } else {
-      const binary = atob(content);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) {
-        bytes[i] = binary.charCodeAt(i);
-      }
-      blob = new Blob([bytes], { type: "image/png" });
-    }
-    const url = URL.createObjectURL(blob);
-    blobUrls.push(url); // Track for cleanup
-    return url;
-  }
-
-  // Cleanup blob URLs on component destroy
   onDestroy(() => {
-    blobUrls.forEach((url) => URL.revokeObjectURL(url));
+    clearTimeout(copyTimeout);
   });
 </script>
 
@@ -102,9 +135,9 @@
   role="listitem"
 >
   <Card
-    class="overflow-hidden border-l-4 {item.isPinned
+    class="overflow-hidden border-l-4 transition-colors duration-200 {item.isPinned
       ? 'border-l-primary bg-primary/5'
-      : 'border-l-transparent hover:border-l-primary/50'}"
+      : 'border-l-transparent hover:border-l-primary/50 hover:bg-muted/30'}"
   >
     <div class="p-3 flex gap-3">
       <!-- Content Type Icon -->
@@ -122,44 +155,59 @@
       <div class="flex-1 min-w-0">
         {#if item.contentType === "text"}
           <p
-            class="text-sm text-foreground line-clamp-3 break-all font-mono leading-relaxed"
+            class="text-sm text-foreground line-clamp-3 break-all font-mono leading-relaxed selection:bg-primary/20"
           >
-            {decodeText(item.content)}
+            {decodedText}
           </p>
         {:else if item.contentType === "image"}
           <div
-            class="relative rounded-md overflow-hidden border border-border bg-muted/50 max-h-32 w-fit"
+            class="relative rounded-md overflow-hidden border border-border bg-muted/50 max-h-32 w-fit group/image"
           >
-            <img
-              src={createImageSrc(item.content)}
-              alt="Clipboard content"
-              class="max-w-full h-auto object-contain max-h-32"
-              loading="lazy"
-            />
+            {#if imageUrl}
+              <img
+                src={imageUrl}
+                alt="Clipboard content"
+                class="max-w-full h-auto object-contain max-h-32 transition-transform duration-300 group-hover/image:scale-105"
+                loading="lazy"
+              />
+            {:else}
+              <div
+                class="flex items-center justify-center w-20 h-20 text-xs text-muted-foreground"
+              >
+                加载中...
+              </div>
+            {/if}
           </div>
         {:else}
-          <p class="text-sm text-muted-foreground italic">[Binary File Data]</p>
+          <div
+            class="flex items-center gap-2 p-2 rounded bg-muted/50 text-sm text-muted-foreground"
+          >
+            <File class="h-4 w-4" />
+            <span class="italic">[二进制文件数据]</span>
+          </div>
         {/if}
 
         <div class="mt-2 flex items-center justify-between">
-          <span class="text-xs text-muted-foreground font-medium">
+          <span class="text-xs text-muted-foreground font-medium opacity-70">
             {formatTime(item.timestamp)}
           </span>
 
           <!-- Actions (visible on hover) -->
           <div
-            class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-1 group-hover:translate-y-0"
           >
             <Button
               variant="ghost"
               size="icon"
-              class="h-7 w-7"
+              class="h-7 w-7 hover:text-primary hover:bg-primary/10"
               title="复制"
-              onclick={async () => {
-                await clipboardStore.copyToClipboard(item);
-              }}
+              onclick={handleCopy}
             >
-              <Copy class="h-3.5 w-3.5" />
+              {#if isCopied}
+                <Check class="h-3.5 w-3.5 text-green-500" />
+              {:else}
+                <Copy class="h-3.5 w-3.5" />
+              {/if}
             </Button>
 
             <Button
@@ -167,7 +215,7 @@
               size="icon"
               class="h-7 w-7 {item.isPinned
                 ? 'text-primary'
-                : 'text-muted-foreground'}"
+                : 'text-muted-foreground hover:text-primary hover:bg-primary/10'}"
               title={item.isPinned ? "取消置顶" : "置顶"}
               onclick={async () => {
                 await clipboardStore.togglePin(item.id);
@@ -179,7 +227,7 @@
             <Button
               variant="ghost"
               size="icon"
-              class="h-7 w-7 text-muted-foreground hover:text-destructive"
+              class="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
               title="删除"
               onclick={async () => {
                 await clipboardStore.deleteItem(item.id);
