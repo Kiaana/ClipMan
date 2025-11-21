@@ -1003,6 +1003,7 @@ fn main() {
                             log::info!("Settings menu clicked");
                             // TODO: 打开设置窗口
                             if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.unminimize();
                                 let _ = window.show();
                                 let _ = window.set_focus();
                             }
@@ -1077,6 +1078,7 @@ fn main() {
 
                     // Show main window
                     if let Some(window) = app_handle_hotkey.get_webview_window("main") {
+                        let _ = window.unminimize();
                         let _ = window.show();
                         let _ = window.set_focus();
                     }
