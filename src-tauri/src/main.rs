@@ -414,19 +414,6 @@ async fn delete_clip(
     Ok(())
 }
 
-#[tauri::command]
-async fn get_pinned_clips(
-    state: State<'_, AppState>,
-) -> Result<Vec<ClipItem>, String> {
-    let storage = state.storage.clone();
-
-    tauri::async_runtime::spawn_blocking(move || {
-        let storage = safe_lock(&storage);
-        storage.get_pinned().map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
 
 #[tauri::command]
 async fn get_settings(
@@ -757,34 +744,7 @@ async fn update_settings(
 }
 
 // 获取当前数据存储路径
-#[tauri::command]
-async fn get_current_data_path(
-    app: AppHandle,
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let settings = state.settings.get();
-    let default_path = app.path().app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
-    
-    let current_path = migration::get_data_directory(default_path, settings.custom_data_path);
-    
-    Ok(current_path.to_string_lossy().to_string())
-}
 
-// 选择文件夹对话框
-#[tauri::command]
-async fn choose_data_folder() -> Result<Option<String>, String> {
-    let folder = tauri::async_runtime::spawn_blocking(move || {
-        use rfd::FileDialog;
-        
-        FileDialog::new()
-            .set_title("选择数据存储位置")
-            .pick_folder()
-    }).await
-    .map_err(|e| format!("Failed to show folder dialog: {}", e))?;
-    
-    Ok(folder.map(|p| p.to_string_lossy().to_string()))
-}
 
 // 打开文件夹
 #[tauri::command]
@@ -1079,7 +1039,6 @@ fn main() {
             search_clips,
             toggle_pin,
             delete_clip,
-            get_pinned_clips,
             get_settings,
             update_settings,
             check_clipboard_permission,
@@ -1088,8 +1047,6 @@ fn main() {
             copy_to_system_clipboard,
             check_for_updates,
             install_update,
-            get_current_data_path,
-            choose_data_folder,
             open_folder,
             migrate_data_location
         ])
