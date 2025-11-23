@@ -75,8 +75,8 @@
     let activeTab = $state<Tab>("general");
 
     onMount(async () => {
-        await loadSettings();
-        await loadDataPath();
+        // Load settings and data path in parallel for better performance
+        await Promise.all([loadSettings(), loadDataPath()]);
     });
 
     async function loadSettings() {

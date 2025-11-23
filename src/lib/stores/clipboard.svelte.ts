@@ -33,14 +33,45 @@ class ClipboardStore {
     this.initialize();
   }
 
+  // Helper: Convert ClipItem from backend (raw bytes) to frontend format (data URLs)
+  private convertToFrontendFormat(item: ClipItem): ClipItem {
+    // If content is already a string, it's already in frontend format
+    if (typeof item.content === 'string') {
+      return item;
+    }
+
+    // Content is a byte array - convert to base64 or data URL
+    if (Array.isArray(item.content)) {
+      if (item.contentType === 'image') {
+        // For images, create data URL for direct browser usage
+        const base64 = btoa(String.fromCharCode(...item.content));
+        return {
+          ...item,
+          content: `data:image/png;base64,${base64}`
+        };
+      } else {
+        // For text and other types, just convert to base64 string
+        const base64 = btoa(String.fromCharCode(...item.content));
+        return {
+          ...item,
+          content: base64
+        };
+      }
+    }
+
+    return item;
+  }
+
   async initialize() {
     // Load initial history
     await this.loadHistory();
 
     // Listen for clipboard changes from Rust backend
     const unlistenClipboard = await listen<ClipItem>('clipboard-changed', (event) => {
+      // Convert raw ClipItem to frontend format (data URLs for images)
+      const frontendItem = this.convertToFrontendFormat(event.payload);
       // Add new item to the beginning
-      this.items = [event.payload, ...this.items];
+      this.items = [frontendItem, ...this.items];
     });
 
     // Listen for history cleared event from menu bar

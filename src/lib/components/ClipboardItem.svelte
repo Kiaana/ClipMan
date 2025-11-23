@@ -29,64 +29,33 @@
     if (item.contentType !== "text") return "";
 
     const content = item.content;
-    if (
-      !content ||
-      (Array.isArray(content) && content.length === 0) ||
-      (typeof content === "string" && content.length === 0)
-    ) {
+    if (!content || (typeof content === "string" && content.length === 0)) {
       return "[内容为空]";
     }
 
     try {
-      let bytes: Uint8Array;
-      if (Array.isArray(content)) {
-        bytes = new Uint8Array(content);
-      } else {
+      // Content is now a base64 string from backend
+      if (typeof content === "string") {
         const binaryString = atob(content);
-        bytes = new Uint8Array(binaryString.length);
+        const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
           bytes[i] = binaryString.charCodeAt(i);
         }
+        return new TextDecoder().decode(bytes);
       }
-      return new TextDecoder().decode(bytes);
+      return "[解码失败]";
     } catch (e) {
       console.error("Failed to decode text content:", e);
       return "[解码失败]";
     }
   });
 
-  // Derived: Create image blob URL
-  // We use an effect to manage the lifecycle of the blob URL
-  let imageUrl = $state("");
-
-  $effect(() => {
-    if (item.contentType !== "image") return;
-
-    let url = "";
-    try {
-      let blob: Blob;
-      const content = item.content;
-
-      if (Array.isArray(content)) {
-        blob = new Blob([new Uint8Array(content)], { type: "image/png" });
-      } else {
-        const binary = atob(content);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) {
-          bytes[i] = binary.charCodeAt(i);
-        }
-        blob = new Blob([bytes], { type: "image/png" });
-      }
-      url = URL.createObjectURL(blob);
-      imageUrl = url;
-    } catch (e) {
-      console.error("Failed to create image URL:", e);
-    }
-
-    return () => {
-      if (url) URL.revokeObjectURL(url);
-    };
-  });
+  // For images: content is already a data URL from backend, use directly
+  const imageDataUrl = $derived(
+    item.contentType === "image" && typeof item.content === "string"
+      ? item.content
+      : "",
+  );
 
   function formatTime(timestamp: number): string {
     const date = new Date(timestamp * 1000);
@@ -163,9 +132,9 @@
           <div
             class="relative rounded-md overflow-hidden border border-border bg-muted/50 max-h-32 w-fit group/image"
           >
-            {#if imageUrl}
+            {#if imageDataUrl}
               <img
-                src={imageUrl}
+                src={imageDataUrl}
                 alt="Clipboard content"
                 class="max-w-full h-auto object-contain max-h-32 transition-transform duration-300 group-hover/image:scale-105"
                 loading="lazy"

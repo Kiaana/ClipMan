@@ -8,7 +8,7 @@ mod settings;
 mod migration;
 
 use clipboard::ClipboardMonitor;
-use storage::{ClipStorage, ClipItem, ContentType};
+use storage::{ClipStorage, ClipItem, FrontendClipItem, ContentType};
 use crypto::Crypto;
 use settings::{Settings, SettingsManager};
 use tauri::{
@@ -346,13 +346,15 @@ pub fn update_tray_menu(app: &AppHandle) {
 async fn get_clipboard_history(
     state: State<'_, AppState>,
     limit: Option<usize>,
-) -> Result<Vec<ClipItem>, String> {
+) -> Result<Vec<FrontendClipItem>, String> {
     let storage = state.storage.clone();
     let limit = limit.unwrap_or(100);
 
     tauri::async_runtime::spawn_blocking(move || {
         let storage = safe_lock(&storage);
-        storage.get_recent(limit).map_err(|e| e.to_string())
+        let items = storage.get_recent(limit).map_err(|e| e.to_string())?;
+        // Convert to frontend-optimized format
+        Ok(items.into_iter().map(FrontendClipItem::from).collect())
     })
     .await
     .map_err(|e| e.to_string())?
@@ -362,12 +364,14 @@ async fn get_clipboard_history(
 async fn search_clips(
     state: State<'_, AppState>,
     query: String,
-) -> Result<Vec<ClipItem>, String> {
+) -> Result<Vec<FrontendClipItem>, String> {
     let storage = state.storage.clone();
     
     tauri::async_runtime::spawn_blocking(move || {
         let storage = safe_lock(&storage);
-        storage.search(&query).map_err(|e| e.to_string())
+        let items = storage.search(&query).map_err(|e| e.to_string())?;
+        // Convert to frontend-optimized format
+        Ok(items.into_iter().map(FrontendClipItem::from).collect())
     })
     .await
     .map_err(|e| e.to_string())?

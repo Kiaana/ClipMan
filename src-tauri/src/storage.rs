@@ -47,6 +47,44 @@ pub struct ClipItem {
     pub pin_order: Option<i32>,
 }
 
+// Frontend-optimized version: converts images to data URLs for zero-cost rendering
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FrontendClipItem {
+    pub id: String,
+    pub content: String,  // Base64 string or data URL
+    pub content_type: ContentType,
+    pub timestamp: i64,
+    pub is_pinned: bool,
+    pub pin_order: Option<i32>,
+}
+
+impl From<ClipItem> for FrontendClipItem {
+    fn from(item: ClipItem) -> Self {
+        use data_encoding::BASE64;
+        
+        let content = match item.content_type {
+            ContentType::Image => {
+                // Convert to data URL: browser can use directly in <img src>
+                format!("data:image/png;base64,{}", BASE64.encode(&item.content))
+            },
+            _ => {
+                // Text and other types: just base64 encode
+                BASE64.encode(&item.content)
+            }
+        };
+
+        FrontendClipItem {
+            id: item.id,
+            content,
+            content_type: item.content_type,
+            timestamp: item.timestamp,
+            is_pinned: item.is_pinned,
+            pin_order: item.pin_order,
+        }
+    }
+}
+
 pub struct ClipStorage {
     conn: Connection,
     crypto: Option<Arc<Crypto>>,
