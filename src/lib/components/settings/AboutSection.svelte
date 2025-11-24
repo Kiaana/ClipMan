@@ -1,7 +1,10 @@
 <script lang="ts">
     import Card from "$lib/components/ui/Card.svelte";
     import Button from "$lib/components/ui/Button.svelte";
+    import MarkdownContent from "$lib/components/ui/MarkdownContent.svelte";
     import { Loader2, Info, RefreshCw, Download } from "lucide-svelte";
+    import { getVersion } from "@tauri-apps/api/app";
+    import { onMount } from "svelte";
 
     interface UpdateInfo {
         available: boolean;
@@ -26,6 +29,18 @@
         checkForUpdates: () => void;
         installUpdate: () => void;
     }>();
+
+    // 获取当前版本号
+    let currentVersion = $state("");
+
+    onMount(async () => {
+        try {
+            currentVersion = await getVersion();
+        } catch (err) {
+            console.error("Failed to get version:", err);
+            currentVersion = "未知";
+        }
+    });
 </script>
 
 <div class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -47,10 +62,10 @@
                     高效的剪贴板管理工具
                 </p>
                 <div class="flex items-center gap-2 mt-1">
-                    {#if updateInfo}
+                    {#if currentVersion}
                         <span
                             class="text-xs bg-muted px-2 py-0.5 rounded text-muted-foreground"
-                            >v{updateInfo.current_version}</span
+                            >v{currentVersion}</span
                         >
                     {/if}
                     <a
@@ -64,43 +79,41 @@
         </div>
 
         <div class="space-y-4 pt-4 border-t border-border">
-            {#if updateInfo}
-                <div class="space-y-2">
+            <div class="space-y-2">
+                <!-- 当前版本永久显示 -->
+                <div class="flex justify-between text-sm">
+                    <span class="text-muted-foreground">当前版本</span>
+                    <span class="font-mono"
+                        >{currentVersion || "加载中..."}</span
+                    >
+                </div>
+
+                {#if updateInfo?.available && updateInfo.latest_version}
                     <div class="flex justify-between text-sm">
-                        <span class="text-muted-foreground">当前版本</span>
-                        <span class="font-mono"
-                            >{updateInfo.current_version}</span
+                        <span class="text-muted-foreground">最新版本</span>
+                        <span
+                            class="font-mono font-bold text-green-600 dark:text-green-400"
+                            >{updateInfo.latest_version}</span
                         >
                     </div>
 
-                    {#if updateInfo.available && updateInfo.latest_version}
-                        <div class="flex justify-between text-sm">
-                            <span class="text-muted-foreground">最新版本</span>
-                            <span
-                                class="font-mono font-bold text-green-600 dark:text-green-400"
-                                >{updateInfo.latest_version}</span
+                    {#if updateInfo.body}
+                        <div
+                            class="mt-3 p-3 bg-muted/50 rounded border border-border"
+                        >
+                            <strong
+                                class="block mb-2 text-xs uppercase tracking-wider text-muted-foreground"
+                                >更新内容</strong
                             >
+                            <MarkdownContent content={updateInfo.body} />
                         </div>
-
-                        {#if updateInfo.body}
-                            <div
-                                class="mt-3 p-3 bg-muted/50 rounded border border-border text-sm"
-                            >
-                                <strong
-                                    class="block mb-1 text-xs uppercase tracking-wider text-muted-foreground"
-                                    >更新内容</strong
-                                >
-                                <pre
-                                    class="whitespace-pre-wrap font-sans text-sm">{updateInfo.body}</pre>
-                            </div>
-                        {/if}
                     {/if}
-                </div>
-            {:else}
-                <div class="text-center py-4 text-sm text-muted-foreground">
-                    点击检查更新获取最新版本信息
-                </div>
-            {/if}
+                {:else if !updateInfo}
+                    <div class="text-center py-4 text-sm text-muted-foreground">
+                        点击检查更新获取最新版本信息
+                    </div>
+                {/if}
+            </div>
 
             <div class="flex gap-2 pt-2">
                 <Button
@@ -120,7 +133,7 @@
                 {#if updateInfo?.available}
                     <Button
                         type="button"
-                        class="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                        class="flex-1 !bg-green-600 !hover:bg-green-700 !text-white"
                         onclick={installUpdate}
                         disabled={installingUpdate}
                     >
