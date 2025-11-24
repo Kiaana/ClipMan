@@ -143,7 +143,7 @@ impl ClipStorage {
         Ok(Self { conn, crypto })
     }
 
-    pub fn insert(&self, item: &ClipItem) -> Result<()> {
+    pub fn insert(&self, item: &ClipItem, max_history_items: usize) -> Result<()> {
         use sha2::{Sha256, Digest};
 
         // Calculate content hash for deduplication
@@ -193,16 +193,16 @@ impl ClipStorage {
             ],
         )?;
 
-        // Auto-cleanup old items (keep last 100)
+        // Auto-cleanup old items (keep last max_history_items)
         self.conn.execute(
             "DELETE FROM clips
              WHERE id IN (
                 SELECT id FROM clips
                 WHERE is_pinned = 0
                 ORDER BY timestamp DESC
-                LIMIT -1 OFFSET 100
+                LIMIT -1 OFFSET ?1
              )",
-            [],
+            params![max_history_items],
         )?;
 
         Ok(())
@@ -274,7 +274,7 @@ impl ClipStorage {
              FROM clips
              WHERE content_type = 'text'
              ORDER BY timestamp DESC
-             LIMIT 500"
+             LIMIT 1000"
         )?;
 
         let items = stmt.query_map([], |row| {

@@ -103,6 +103,8 @@ impl SettingsManager {
             }
         }
 
+
+
         log::info!("Settings loaded: {:?}", self.settings.lock().unwrap());
         Ok(())
     }

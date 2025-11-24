@@ -271,12 +271,14 @@ impl ClipboardMonitor {
         let item_for_emit = item.clone();
 
         let state = app_handle.state::<AppState>();
+        let max_history_items = state.settings.get().max_history_items;
+
         let result = {
             let storage = state.storage.lock().unwrap_or_else(|poisoned| {
                 log::warn!("⚠️ Recovered from poisoned lock in clipboard monitor");
                 poisoned.into_inner()
             });
-            storage.insert(&item)
+            storage.insert(&item, max_history_items)
         };
 
         if let Err(e) = result {
