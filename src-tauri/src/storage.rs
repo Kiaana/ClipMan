@@ -223,11 +223,22 @@ impl ClipStorage {
     }
 
     pub fn get_recent(&self, limit: usize) -> Result<Vec<ClipItem>> {
+        // Query to get all pinned items plus the most recent N non-pinned items
+        // This ensures pinned items are always visible regardless of timestamp
         let mut stmt = self.conn.prepare(
             "SELECT id, content, content_type, timestamp, is_pinned, pin_order
              FROM clips
-             ORDER BY timestamp DESC
-             LIMIT ?1"
+             WHERE is_pinned = 1
+             UNION ALL
+             SELECT id, content, content_type, timestamp, is_pinned, pin_order
+             FROM (
+                 SELECT id, content, content_type, timestamp, is_pinned, pin_order
+                 FROM clips
+                 WHERE is_pinned = 0
+                 ORDER BY timestamp DESC
+                 LIMIT ?1
+             )
+             ORDER BY is_pinned DESC, pin_order ASC, timestamp DESC"
         )?;
 
         let items = stmt.query_map([limit], |row| {
