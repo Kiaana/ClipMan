@@ -266,7 +266,7 @@ impl ClipboardMonitor {
 
     fn save_to_storage(app_handle: &AppHandle, item: ClipItem) {
         use crate::AppState;
-        use crate::update_tray_menu;
+        use crate::tray::update_tray_menu;
         use crate::storage::FrontendClipItem;
 
         let mut item_for_emit = FrontendClipItem::from(item.clone());

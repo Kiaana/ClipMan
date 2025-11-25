@@ -164,11 +164,8 @@ impl ClipStorage {
         if let Some(id) = existing_id {
             log::debug!("⏭️ Duplicate content detected (hash: {}), updating timestamp", &content_hash[..8]);
             
-            // Update timestamp of existing item
-            self.conn.execute(
-                "UPDATE clips SET timestamp = ?1 WHERE id = ?2",
-                params![item.timestamp, id],
-            )?;
+            // Update timestamp of existing item using the shared method
+            self.update_timestamp(&id, item.timestamp)?;
             
             return Ok(Some(id));
         }
@@ -372,6 +369,48 @@ impl ClipStorage {
     pub fn clear_non_pinned(&self) -> Result<()> {
         log::info!("🗑️ Clearing non-pinned clipboard history");
         self.conn.execute("DELETE FROM clips WHERE is_pinned = 0", [])?;
+        Ok(())
+    }
+
+    /// Get a single clip item by ID (efficient single-row lookup)
+    pub fn get_by_id(&self, id: &str) -> Result<Option<ClipItem>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, content, content_type, timestamp, is_pinned, pin_order
+             FROM clips
+             WHERE id = ?1"
+        )?;
+
+        let item = stmt.query_row([id], |row| {
+            let encrypted_content: Vec<u8> = row.get(1)?;
+            let content = match self.decrypt_content(encrypted_content.clone()) {
+                Ok(c) => c,
+                Err(e) => {
+                    log::warn!("⚠️ Failed to decrypt item {}: {:?}", id, e);
+                    Vec::new()
+                }
+            };
+
+            Ok(ClipItem {
+                id: row.get(0)?,
+                content,
+                content_type: ContentType::from_string(&row.get::<_, String>(2)?),
+                timestamp: row.get(3)?,
+                is_pinned: row.get::<_, i32>(4)? != 0,
+                pin_order: row.get(5)?,
+            })
+        }).optional()?;
+
+        // Filter out items with empty content (decryption failed)
+        Ok(item.filter(|i| !i.content.is_empty()))
+    }
+
+    /// Update the timestamp of a clip item (move it to the top of recent list)
+    pub fn update_timestamp(&self, id: &str, new_timestamp: i64) -> Result<()> {
+        self.conn.execute(
+            "UPDATE clips SET timestamp = ?1 WHERE id = ?2",
+            params![new_timestamp, id],
+        )?;
+        log::debug!("📍 Updated timestamp for item {}", id);
         Ok(())
     }
 

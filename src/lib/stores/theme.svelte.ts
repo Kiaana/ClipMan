@@ -1,6 +1,7 @@
-const browser = typeof window !== 'undefined';
+import type { Theme } from '$lib/types';
+export type { Theme } from '$lib/types';
 
-type Theme = 'light' | 'dark' | 'light-pink' | 'system';
+const browser = typeof window !== 'undefined';
 
 function createThemeStore() {
     let theme = $state<Theme>('system');

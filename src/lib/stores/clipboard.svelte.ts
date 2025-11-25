@@ -1,15 +1,10 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { toastStore } from './toast.svelte';
+import type { ClipItem } from '$lib/types';
 
-export interface ClipItem {
-  id: string;
-  content: string; // Base64 string or data URL from Rust backend
-  contentType: 'text' | 'image' | 'file';
-  timestamp: number;
-  isPinned: boolean;
-  pinOrder: number | null;
-}
+// Re-export type for convenience
+export type { ClipItem } from '$lib/types';
 
 class ClipboardStore {
   items = $state<ClipItem[]>([]);

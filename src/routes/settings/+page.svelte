@@ -5,6 +5,7 @@
     import Button from "$lib/components/ui/Button.svelte";
     import { ChevronLeft, Loader2, Save, RotateCcw } from "lucide-svelte";
     import { open } from "@tauri-apps/plugin-dialog";
+    import type { Settings, UpdateInfo, SettingsTab } from "$lib/types";
 
     // Import modularized components
     import Sidebar from "$lib/components/settings/Sidebar.svelte";
@@ -14,26 +15,6 @@
     import StorageSettings from "$lib/components/settings/StorageSettings.svelte";
     import AboutSection from "$lib/components/settings/AboutSection.svelte";
     import AppearanceSettings from "$lib/components/settings/AppearanceSettings.svelte";
-
-    interface Settings {
-        globalShortcut: string;
-        maxHistoryItems: number;
-        autoCleanup: boolean;
-        trayTextLength: number;
-        storeOriginalImage: boolean;
-        maxPinnedInTray: number;
-        maxRecentInTray: number;
-        customDataPath: string | null;
-        enableAutostart: boolean;
-    }
-
-    interface UpdateInfo {
-        available: boolean;
-        current_version: string;
-        latest_version?: string;
-        body?: string;
-        date?: string;
-    }
 
     let settings = $state<Settings>({
         globalShortcut: "CommandOrControl+Shift+V",
@@ -65,14 +46,7 @@
     let deleteOldData = $state(true);
 
     // 侧边栏导航状态
-    type Tab =
-        | "general"
-        | "clipboard"
-        | "tray"
-        | "storage"
-        | "about"
-        | "appearance";
-    let activeTab = $state<Tab>("general");
+    let activeTab = $state<SettingsTab>("general");
 
     onMount(async () => {
         // Load settings and data path in parallel for better performance

@@ -1,5 +1,7 @@
+import type { Route } from '$lib/types';
+export type { Route } from '$lib/types';
+
 // Simple client-side router using Svelte 5 runes
-export type Route = 'home' | 'settings';
 
 class Router {
     currentRoute = $state<Route>('home');

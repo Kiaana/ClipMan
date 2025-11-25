@@ -625,7 +625,7 @@ dependencies = [
 
 [[package]]
 name = "clipman"
-version = "1.9.1"
+version = "1.9.3"
 dependencies = [
  "arboard",
  "chrono",
