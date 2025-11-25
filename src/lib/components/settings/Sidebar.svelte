@@ -7,33 +7,41 @@
         Info,
         Palette,
     } from "lucide-svelte";
-
-    type Tab =
-        | "general"
-        | "clipboard"
-        | "tray"
-        | "storage"
-        | "about"
-        | "appearance"; // Updated Tab type
+    import { i18n } from "$lib/i18n";
+    import type { SettingsTab } from "$lib/types";
 
     let { activeTab = $bindable() } = $props<{
-        activeTab: Tab;
+        activeTab: SettingsTab;
     }>();
 
-    const tabs = [
-        // Changed type definition and added 'as const'
-        { id: "general", label: "常规", icon: SettingsIcon }, // Changed Settings to SettingsIcon to match import
-        { id: "appearance", label: "外观", icon: Palette }, // Added Appearance tab
-        { id: "clipboard", label: "剪贴板", icon: ClipboardList },
-        { id: "tray", label: "托盘菜单", icon: Menu },
-        { id: "storage", label: "存储", icon: Database }, // Changed label from "数据存储" to "存储"
-        { id: "about", label: "关于", icon: Info },
-    ] as const;
+    const t = $derived(i18n.t);
+
+    // Tabs with icons - labels are computed from i18n
+    const tabConfig = [
+        { id: "general" as const, icon: SettingsIcon },
+        { id: "appearance" as const, icon: Palette },
+        { id: "clipboard" as const, icon: ClipboardList },
+        { id: "tray" as const, icon: Menu },
+        { id: "storage" as const, icon: Database },
+        { id: "about" as const, icon: Info },
+    ];
+
+    function getTabLabel(id: SettingsTab): string {
+        const labels: Record<SettingsTab, string> = {
+            general: t.settingsGeneral,
+            appearance: t.settingsAppearance,
+            clipboard: t.settingsClipboard,
+            tray: t.settingsTray,
+            storage: t.settingsStorage,
+            about: t.settingsAbout,
+        };
+        return labels[id];
+    }
 </script>
 
 <aside class="w-64 border-r border-border bg-muted/30 p-4 flex flex-col">
     <nav class="space-y-1">
-        {#each tabs as tab}
+        {#each tabConfig as tab}
             <button
                 class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors
                 {activeTab === tab.id
@@ -42,7 +50,7 @@
                 onclick={() => (activeTab = tab.id)}
             >
                 <tab.icon class="h-4 w-4" />
-                {tab.label}
+                {getTabLabel(tab.id)}
             </button>
         {/each}
     </nav>

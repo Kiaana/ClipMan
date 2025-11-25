@@ -2,6 +2,7 @@
   import { clipboardStore } from "$lib/stores/clipboard.svelte";
   import { router } from "$lib/stores/router.svelte";
   import { themeStore } from "$lib/stores/theme.svelte";
+  import { i18n } from "$lib/i18n";
   import SearchBar from "$lib/components/SearchBar.svelte";
   import ClipboardItem from "$lib/components/ClipboardItem.svelte";
   import SettingsPage from "./settings/+page.svelte";
@@ -23,6 +24,9 @@
   } from "lucide-svelte";
   import { flip } from "svelte/animate";
 
+  // Reactive reference to translations
+  const t = $derived(i18n.t);
+
   // Reactive state showing pinned vs all
   let showPinned = $state(false);
 
@@ -32,7 +36,7 @@
   );
 
   async function clearHistory() {
-    if (confirm("确定要清除所有非置顶的历史记录吗？")) {
+    if (confirm(t.confirmClearHistory)) {
       await clipboardStore.clearNonPinned();
     }
   }
@@ -71,13 +75,13 @@
       class="flex-none p-4 border-b border-border bg-muted/30 backdrop-blur-sm sticky top-0 z-10"
     >
       <div class="flex items-center justify-between mb-4">
-        <h1 class="text-2xl font-bold tracking-tight">ClipMan</h1>
+        <h1 class="text-2xl font-bold tracking-tight">{t.appName}</h1>
         <div class="flex items-center gap-2">
           <Button
             variant="ghost"
             size="icon"
             onclick={() => themeStore.toggle()}
-            title="切换主题"
+            title={t.switchTheme}
           >
             {#if themeStore.current === "light"}
               <Sun class="h-4 w-4" />
@@ -92,7 +96,7 @@
           <Button
             variant="ghost"
             size="icon"
-            title="设置"
+            title={t.settings}
             onclick={() => router.goToSettings()}
           >
             <Settings class="h-4 w-4" />
@@ -112,7 +116,7 @@
               : 'text-muted-foreground hover:text-foreground'}"
             onclick={() => (showPinned = false)}
           >
-            历史记录
+            {t.history}
           </button>
           <button
             role="tab"
@@ -124,7 +128,7 @@
               : 'text-muted-foreground hover:text-foreground'}"
             onclick={() => (showPinned = true)}
           >
-            置顶 <span class="ml-1 text-xs opacity-70"
+            {t.pinned} <span class="ml-1 text-xs opacity-70"
               >({clipboardStore.pinnedItems.length})</span
             >
           </button>
@@ -134,7 +138,7 @@
           <Button
             variant="ghost"
             size="icon"
-            title="清除非置顶"
+            title={t.clearNonPinned}
             onclick={clearHistory}
             class="text-muted-foreground hover:text-destructive"
           >
@@ -155,7 +159,7 @@
           class="flex flex-col items-center justify-center h-full text-muted-foreground"
         >
           <Loader2 class="h-8 w-8 animate-spin mb-2" />
-          <p>加载中...</p>
+          <p>{t.loading}</p>
         </div>
       {:else if displayItems.length === 0}
         <div
@@ -163,28 +167,28 @@
         >
           {#if showPinned}
             <Pin class="h-12 w-12 mb-4 opacity-20" />
-            <p class="font-medium">暂无置顶项目</p>
-            <p class="text-sm mt-1 opacity-70">点击置顶图标收藏常用内容</p>
+            <p class="font-medium">{t.noPinnedItems}</p>
+            <p class="text-sm mt-1 opacity-70">{t.noPinnedItemsHint}</p>
           {:else}
             <ClipboardList class="h-12 w-12 mb-4 opacity-20" />
-            <p class="font-medium">暂无剪切板历史</p>
-            <p class="text-sm mt-1 opacity-70">复制内容后会自动出现在这里</p>
+            <p class="font-medium">{t.noClipboardHistory}</p>
+            <p class="text-sm mt-1 opacity-70">{t.noClipboardHistoryHint}</p>
             <div
               class="mt-8 p-4 bg-muted/50 rounded-lg text-xs text-left space-y-1 max-w-xs mx-auto"
             >
-              <p class="font-semibold mb-2 opacity-70">统计信息</p>
+              <p class="font-semibold mb-2 opacity-70">{t.statistics}</p>
               <div class="flex justify-between">
-                <span>总计:</span> <span>{clipboardStore.items.length}</span>
+                <span>{t.total}:</span> <span>{clipboardStore.items.length}</span>
               </div>
               <div class="flex justify-between">
-                <span>文本:</span>
+                <span>{t.text}:</span>
                 <span
                   >{clipboardStore.items.filter((i) => i.contentType === "text")
                     .length}</span
                 >
               </div>
               <div class="flex justify-between">
-                <span>图片:</span>
+                <span>{t.image}:</span>
                 <span
                   >{clipboardStore.items.filter(
                     (i) => i.contentType === "image",
@@ -198,7 +202,7 @@
         <div
           class="flex-none px-4 py-2 flex justify-between items-center text-xs text-muted-foreground border-b border-border/50 bg-background/95 backdrop-blur z-10"
         >
-          <span>显示 {displayItems.length} 项</span>
+          <span>{t.showing} {displayItems.length} {t.items}</span>
           <div class="flex gap-2 items-center">
             <span class="flex items-center gap-1"
               ><FileText class="h-3 w-3" />

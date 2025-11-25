@@ -1,23 +1,20 @@
 <script lang="ts">
     import Card from "$lib/components/ui/Card.svelte";
-
-    interface Settings {
-        trayTextLength: number;
-        maxPinnedInTray: number;
-        maxRecentInTray: number;
-        [key: string]: any;
-    }
+    import { i18n } from "$lib/i18n";
+    import type { Settings } from "$lib/types";
 
     let { settings = $bindable() } = $props<{
         settings: Settings;
     }>();
+
+    const t = $derived(i18n.t);
 </script>
 
 <div class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
     <div>
-        <h2 class="text-lg font-semibold mb-1">托盘菜单</h2>
+        <h2 class="text-lg font-semibold mb-1">{t.settingsTray}</h2>
         <p class="text-sm text-muted-foreground">
-            自定义系统托盘菜单的显示内容
+            {t.trayTextLengthDesc}
         </p>
     </div>
 
@@ -25,7 +22,7 @@
         <div class="space-y-4">
             <div class="flex justify-between">
                 <label for="tray-text-length" class="text-sm font-medium"
-                    >文本长度限制</label
+                    >{t.trayTextLength}</label
                 >
                 <span class="text-sm font-bold text-primary"
                     >{settings.trayTextLength}</span
@@ -41,14 +38,14 @@
                 class="w-full accent-primary h-2 bg-muted rounded-lg appearance-none cursor-pointer"
             />
             <p class="text-xs text-muted-foreground">
-                托盘菜单中显示的文本最大长度
+                {t.trayTextLengthDesc}
             </p>
         </div>
 
         <div class="space-y-4">
             <div class="flex justify-between">
                 <label for="max-pinned" class="text-sm font-medium"
-                    >最多置顶项</label
+                    >{t.maxPinnedInTray}</label
                 >
                 <span class="text-sm font-bold text-primary"
                     >{settings.maxPinnedInTray}</span
@@ -64,14 +61,14 @@
                 class="w-full accent-primary h-2 bg-muted rounded-lg appearance-none cursor-pointer"
             />
             <p class="text-xs text-muted-foreground">
-                托盘菜单中显示的最大置顶条目数
+                {t.maxPinnedInTrayDesc}
             </p>
         </div>
 
         <div class="space-y-4">
             <div class="flex justify-between">
                 <label for="max-recent" class="text-sm font-medium"
-                    >最多最近项</label
+                    >{t.maxRecentInTray}</label
                 >
                 <span class="text-sm font-bold text-primary"
                     >{settings.maxRecentInTray}</span
@@ -87,7 +84,7 @@
                 class="w-full accent-primary h-2 bg-muted rounded-lg appearance-none cursor-pointer"
             />
             <p class="text-xs text-muted-foreground">
-                托盘菜单中显示的最大最近条目数
+                {t.maxRecentInTrayDesc}
             </p>
         </div>
     </Card>

@@ -1,6 +1,6 @@
 [package]
 name = "clipman"
-version = "1.9.3"
+version = "1.10.0"
 description = "Modern clipboard manager for Windows"
 authors = ["ClipMan Team"]
 license = "MIT"

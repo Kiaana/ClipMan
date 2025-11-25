@@ -1,26 +1,39 @@
 <script lang="ts">
     import Card from "$lib/components/ui/Card.svelte";
     import { themeStore } from "$lib/stores/theme.svelte";
-    import { Monitor, Moon, Sun, Heart } from "lucide-svelte";
+    import { i18n, type Locale } from "$lib/i18n";
+    import { Monitor, Moon, Sun, Heart, Globe } from "lucide-svelte";
+
+    const t = $derived(i18n.t);
 
     const themes = [
-        { value: "light", label: "浅色", icon: Sun },
-        { value: "dark", label: "深色", icon: Moon },
-        { value: "light-pink", label: "淡粉色", icon: Heart },
-        { value: "system", label: "跟随系统", icon: Monitor },
-    ] as const;
+        { value: "light" as const, icon: Sun, labelKey: "themeLight" as const },
+        { value: "dark" as const, icon: Moon, labelKey: "themeDark" as const },
+        { value: "light-pink" as const, icon: Heart, labelKey: "themePink" as const },
+        { value: "system" as const, icon: Monitor, labelKey: "themeSystem" as const },
+    ];
+
+    const languages: { value: Locale; label: string }[] = [
+        { value: "zh-CN", label: "简体中文" },
+        { value: "en", label: "English" },
+    ];
+
+    function getThemeLabel(key: "themeLight" | "themeDark" | "themePink" | "themeSystem"): string {
+        return t[key];
+    }
 </script>
 
 <div class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
     <div>
-        <h2 class="text-lg font-semibold mb-1">外观</h2>
-        <p class="text-sm text-muted-foreground">自定义应用的主题和外观</p>
+        <h2 class="text-lg font-semibold mb-1">{t.settingsAppearance}</h2>
+        <p class="text-sm text-muted-foreground">{t.themeMode}</p>
     </div>
 
     <Card class="p-6 space-y-6">
+        <!-- Theme Selection -->
         <div class="space-y-3">
-            <label class="text-sm font-medium">主题模式</label>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <span class="text-sm font-medium" id="theme-label">{t.themeMode}</span>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" role="radiogroup" aria-labelledby="theme-label">
                 {#each themes as theme}
                     <button
                         class="flex flex-col items-center gap-3 p-4 rounded-lg border-2 transition-all hover:bg-muted/50
@@ -28,6 +41,8 @@
                             ? 'border-primary bg-primary/5'
                             : 'border-transparent bg-muted/20'}"
                         onclick={() => themeStore.setTheme(theme.value)}
+                        role="radio"
+                        aria-checked={themeStore.current === theme.value}
                     >
                         <div
                             class="p-2 rounded-full {themeStore.current ===
@@ -37,7 +52,34 @@
                         >
                             <theme.icon class="h-5 w-5" />
                         </div>
-                        <span class="text-sm font-medium">{theme.label}</span>
+                        <span class="text-sm font-medium">{getThemeLabel(theme.labelKey)}</span>
+                    </button>
+                {/each}
+            </div>
+        </div>
+
+        <!-- Language Selection -->
+        <div class="space-y-3 pt-4 border-t border-border">
+            <span class="text-sm font-medium" id="lang-label">{t.language}</span>
+            <div class="grid grid-cols-2 gap-4" role="radiogroup" aria-labelledby="lang-label">
+                {#each languages as lang}
+                    <button
+                        class="flex items-center gap-3 p-3 rounded-lg border-2 transition-all hover:bg-muted/50
+                        {i18n.locale === lang.value
+                            ? 'border-primary bg-primary/5'
+                            : 'border-transparent bg-muted/20'}"
+                        onclick={() => i18n.setLocale(lang.value)}
+                        role="radio"
+                        aria-checked={i18n.locale === lang.value}
+                    >
+                        <div
+                            class="p-2 rounded-full {i18n.locale === lang.value
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-background text-muted-foreground'}"
+                        >
+                            <Globe class="h-4 w-4" />
+                        </div>
+                        <span class="text-sm font-medium">{lang.label}</span>
                     </button>
                 {/each}
             </div>

@@ -2,6 +2,7 @@
   import { onDestroy } from "svelte";
   import { clipboardStore } from "$lib/stores/clipboard.svelte";
   import type { ClipItem } from "$lib/stores/clipboard.svelte";
+  import { i18n } from "$lib/i18n";
   import Card from "./ui/Card.svelte";
   import Button from "./ui/Button.svelte";
   import {
@@ -20,6 +21,8 @@
 
   let { item }: Props = $props();
 
+  const t = $derived(i18n.t);
+
   // UI State
   let isCopied = $state(false);
   let copyTimeout: ReturnType<typeof setTimeout>;
@@ -30,7 +33,7 @@
 
     const content = item.content;
     if (!content || (typeof content === "string" && content.length === 0)) {
-      return "[内容为空]";
+      return t.emptyContent;
     }
 
     try {
@@ -43,10 +46,10 @@
         }
         return new TextDecoder().decode(bytes);
       }
-      return "[解码失败]";
+      return t.decodeFailed;
     } catch (e) {
       console.error("Failed to decode text content:", e);
-      return "[解码失败]";
+      return t.decodeFailed;
     }
   });
 
@@ -64,21 +67,21 @@
 
     // Less than 1 minute
     if (diff < 60000) {
-      return "刚刚";
+      return t.justNow;
     }
 
     // Less than 1 hour
     if (diff < 3600000) {
-      return `${Math.floor(diff / 60000)}分钟前`;
+      return i18n.format(t.minutesAgo, { n: Math.floor(diff / 60000) });
     }
 
     // Less than 24 hours
     if (diff < 86400000) {
-      return `${Math.floor(diff / 3600000)}小时前`;
+      return i18n.format(t.hoursAgo, { n: Math.floor(diff / 3600000) });
     }
 
     // Otherwise show date
-    return date.toLocaleDateString("zh-CN");
+    return date.toLocaleDateString(i18n.locale === 'zh-CN' ? 'zh-CN' : 'en-US');
   }
 
   async function handleCopy() {
@@ -143,7 +146,7 @@
               <div
                 class="flex items-center justify-center w-20 h-20 text-xs text-muted-foreground"
               >
-                加载中...
+                {t.loading}
               </div>
             {/if}
           </div>
@@ -152,7 +155,7 @@
             class="flex items-center gap-2 p-2 rounded bg-muted/50 text-sm text-muted-foreground"
           >
             <File class="h-4 w-4" />
-            <span class="italic">[二进制文件数据]</span>
+            <span class="italic">{t.binaryFileData}</span>
           </div>
         {/if}
 
@@ -169,7 +172,7 @@
               variant="ghost"
               size="icon"
               class="h-7 w-7 hover:text-primary hover:bg-primary/10"
-              title="复制"
+              title={t.copy}
               onclick={handleCopy}
             >
               {#if isCopied}
@@ -185,7 +188,7 @@
               class="h-7 w-7 {item.isPinned
                 ? 'text-primary'
                 : 'text-muted-foreground hover:text-primary hover:bg-primary/10'}"
-              title={item.isPinned ? "取消置顶" : "置顶"}
+              title={item.isPinned ? t.unpin : t.pin}
               onclick={async () => {
                 await clipboardStore.togglePin(item.id);
               }}
@@ -197,7 +200,7 @@
               variant="ghost"
               size="icon"
               class="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-              title="删除"
+              title={t.delete}
               onclick={async () => {
                 await clipboardStore.deleteItem(item.id);
               }}

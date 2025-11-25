@@ -5,14 +5,8 @@
     import { Loader2, Info, RefreshCw, Download } from "lucide-svelte";
     import { getVersion } from "@tauri-apps/api/app";
     import { onMount } from "svelte";
-
-    interface UpdateInfo {
-        available: boolean;
-        current_version: string;
-        latest_version?: string;
-        body?: string;
-        date?: string;
-    }
+    import { i18n } from "$lib/i18n";
+    import type { UpdateInfo } from "$lib/types";
 
     let {
         updateInfo,
@@ -30,7 +24,8 @@
         installUpdate: () => void;
     }>();
 
-    // 获取当前版本号
+    const t = $derived(i18n.t);
+
     let currentVersion = $state("");
 
     onMount(async () => {
@@ -38,15 +33,15 @@
             currentVersion = await getVersion();
         } catch (err) {
             console.error("Failed to get version:", err);
-            currentVersion = "未知";
+            currentVersion = "?";
         }
     });
 </script>
 
 <div class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
     <div>
-        <h2 class="text-lg font-semibold mb-1">关于</h2>
-        <p class="text-sm text-muted-foreground">版本信息和软件更新</p>
+        <h2 class="text-lg font-semibold mb-1">{t.settingsAbout}</h2>
+        <p class="text-sm text-muted-foreground">{t.version}</p>
     </div>
 
     <Card class="p-6 space-y-6">
@@ -57,9 +52,9 @@
                 <Info class="h-6 w-6 text-primary" />
             </div>
             <div>
-                <h3 class="font-bold text-lg">ClipMan</h3>
+                <h3 class="font-bold text-lg">{t.appName}</h3>
                 <p class="text-sm text-muted-foreground">
-                    高效的剪贴板管理工具
+                    {i18n.locale === 'zh-CN' ? '高效的剪贴板管理工具' : 'Efficient clipboard manager'}
                 </p>
                 <div class="flex items-center gap-2 mt-1">
                     {#if currentVersion}
@@ -72,7 +67,7 @@
                         href="https://github.com/RustyPiano/ClipMan"
                         target="_blank"
                         class="text-xs text-primary hover:underline"
-                        >GitHub 仓库</a
+                        >GitHub</a
                     >
                 </div>
             </div>
@@ -80,17 +75,16 @@
 
         <div class="space-y-4 pt-4 border-t border-border">
             <div class="space-y-2">
-                <!-- 当前版本永久显示 -->
                 <div class="flex justify-between text-sm">
-                    <span class="text-muted-foreground">当前版本</span>
+                    <span class="text-muted-foreground">{t.version}</span>
                     <span class="font-mono"
-                        >{currentVersion || "加载中..."}</span
+                        >{currentVersion || t.loading}</span
                     >
                 </div>
 
                 {#if updateInfo?.available && updateInfo.latest_version}
                     <div class="flex justify-between text-sm">
-                        <span class="text-muted-foreground">最新版本</span>
+                        <span class="text-muted-foreground">{t.updateAvailable}</span>
                         <span
                             class="font-mono font-bold text-green-600 dark:text-green-400"
                             >{updateInfo.latest_version}</span
@@ -103,14 +97,14 @@
                         >
                             <strong
                                 class="block mb-2 text-xs uppercase tracking-wider text-muted-foreground"
-                                >更新内容</strong
+                                >{i18n.locale === 'zh-CN' ? '更新内容' : 'Release Notes'}</strong
                             >
                             <MarkdownContent content={updateInfo.body} />
                         </div>
                     {/if}
                 {:else if !updateInfo}
                     <div class="text-center py-4 text-sm text-muted-foreground">
-                        点击检查更新获取最新版本信息
+                        {t.checkUpdate}
                     </div>
                 {/if}
             </div>
@@ -124,9 +118,9 @@
                     disabled={checkingUpdate || installingUpdate}
                 >
                     {#if checkingUpdate}
-                        <Loader2 class="h-4 w-4 animate-spin mr-2" /> 检查中...
+                        <Loader2 class="h-4 w-4 animate-spin mr-2" /> {t.checking}
                     {:else}
-                        <RefreshCw class="h-4 w-4 mr-2" /> 检查更新
+                        <RefreshCw class="h-4 w-4 mr-2" /> {t.checkUpdate}
                     {/if}
                 </Button>
 
@@ -138,9 +132,9 @@
                         disabled={installingUpdate}
                     >
                         {#if installingUpdate}
-                            <Loader2 class="h-4 w-4 animate-spin mr-2" /> 安装中...
+                            <Loader2 class="h-4 w-4 animate-spin mr-2" /> {t.installing}
                         {:else}
-                            <Download class="h-4 w-4 mr-2" /> 安装更新
+                            <Download class="h-4 w-4 mr-2" /> {t.installUpdate}
                         {/if}
                     </Button>
                 {/if}
@@ -149,12 +143,9 @@
             {#if updateMessage}
                 <div
                     class="p-3 rounded text-sm text-center
-                    {updateMessage.includes('失败')
-                        ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
-                        : updateMessage.includes('最新版本') ||
-                            updateMessage.includes('成功')
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
-                          : 'bg-muted text-muted-foreground'}"
+                    {updateMessage.includes(t.noUpdateAvailable) || updateMessage.includes('✓')
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
+                        : 'bg-muted text-muted-foreground'}"
                 >
                     {updateMessage}
                 </div>

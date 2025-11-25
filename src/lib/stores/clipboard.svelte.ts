@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { toastStore } from './toast.svelte';
+import { i18n } from '$lib/i18n';
 import type { ClipItem } from '$lib/types';
 
 // Re-export type for convenience
@@ -193,15 +194,16 @@ class ClipboardStore {
       console.log('[SUCCESS] Successfully copied to clipboard');
 
       // Show success toast
+      const t = i18n.t;
       const contentPreview = item.contentType === 'text'
-        ? '文本'
+        ? t.text
         : item.contentType === 'image'
-          ? '图片'
-          : '文件';
-      toastStore.add(`已复制${contentPreview}到剪贴板`, 'success');
+          ? t.image
+          : t.file;
+      toastStore.add(`${t.copied} ${contentPreview}`, 'success');
     } catch (error) {
       console.error('[ERROR] Failed to copy to clipboard:', error);
-      toastStore.add('复制失败', 'error');
+      toastStore.add(i18n.t.copyFailed, 'error');
       throw error;
     }
   }

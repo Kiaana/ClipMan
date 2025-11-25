@@ -2,6 +2,7 @@
     import { invoke } from "@tauri-apps/api/core";
     import { onMount } from "svelte";
     import { router } from "$lib/stores/router.svelte";
+    import { i18n } from "$lib/i18n";
     import Button from "$lib/components/ui/Button.svelte";
     import { ChevronLeft, Loader2, Save, RotateCcw } from "lucide-svelte";
     import { open } from "@tauri-apps/plugin-dialog";
@@ -15,6 +16,8 @@
     import StorageSettings from "$lib/components/settings/StorageSettings.svelte";
     import AboutSection from "$lib/components/settings/AboutSection.svelte";
     import AppearanceSettings from "$lib/components/settings/AppearanceSettings.svelte";
+
+    const t = $derived(i18n.t);
 
     let settings = $state<Settings>({
         globalShortcut: "CommandOrControl+Shift+V",
@@ -60,7 +63,7 @@
         } catch (err) {
             console.error("Failed to load settings:", err);
             const errorMsg = err instanceof Error ? err.message : String(err);
-            message = "加载设置失败: " + errorMsg;
+            message = `${t.loadSettingsFailed}: ${errorMsg}`;
         } finally {
             loading = false;
         }
@@ -71,7 +74,7 @@
             currentDataPath = await invoke<string>("get_current_data_path");
         } catch (err) {
             console.error("Failed to load data path:", err);
-            currentDataPath = "无法获取存储位置";
+            currentDataPath = "";
         }
     }
 
@@ -80,19 +83,19 @@
             saving = true;
             message = "";
             await invoke("update_settings", { settings: settings });
-            message = "设置已保存";
+            message = t.save + " ✓";
             setTimeout(() => (message = ""), 3000);
         } catch (err) {
             console.error("Failed to save settings:", err);
             const errorMsg = err instanceof Error ? err.message : String(err);
-            message = "保存失败: " + errorMsg;
+            message = `${t.saveSettingsFailed}: ${errorMsg}`;
         } finally {
             saving = false;
         }
     }
 
     async function resetSettings() {
-        if (!confirm("确定要重置所有设置吗？这将恢复默认配置。")) return;
+        if (!confirm(t.confirmResetSettings)) return;
 
         try {
             settings = {
@@ -107,9 +110,9 @@
                 enableAutostart: false,
             };
             await saveSettings();
-            message = "设置已重置";
+            message = t.reset + " ✓";
         } catch (err) {
-            message = "重置失败";
+            message = t.saveSettingsFailed;
         }
     }
 
@@ -119,9 +122,9 @@
             updateMessage = "";
             updateInfo = await invoke<UpdateInfo>("check_for_updates");
             if (updateInfo.available) {
-                updateMessage = `发现新版本: ${updateInfo.latest_version}`;
+                updateMessage = `${t.updateAvailable}: ${updateInfo.latest_version}`;
             } else {
-                updateMessage = "当前已是最新版本";
+                updateMessage = t.noUpdateAvailable;
             }
         } catch (err) {
             console.error("Check update failed:", err);
@@ -207,7 +210,7 @@
             >
                 <ChevronLeft class="h-5 w-5" />
             </Button>
-            <h1 class="text-xl font-bold tracking-tight">设置</h1>
+            <h1 class="text-xl font-bold tracking-tight">{t.settings}</h1>
         </div>
 
         <div class="flex items-center gap-2">
@@ -218,7 +221,7 @@
                 class="gap-2"
             >
                 <RotateCcw class="h-4 w-4" />
-                重置
+                {t.reset}
             </Button>
             <Button
                 onclick={saveSettings}
@@ -227,10 +230,10 @@
             >
                 {#if saving}
                     <Loader2 class="h-4 w-4 animate-spin" />
-                    保存中
+                    {t.saving}
                 {:else}
                     <Save class="h-4 w-4" />
-                    保存
+                    {t.save}
                 {/if}
             </Button>
         </div>
@@ -281,9 +284,9 @@
     {#if message}
         <div
             class="absolute bottom-6 right-6 p-4 rounded-md shadow-lg text-sm font-medium animate-in slide-in-from-bottom-4 fade-in duration-300 z-50
-            {message.includes('失败')
-                ? 'bg-destructive text-destructive-foreground'
-                : 'bg-primary text-primary-foreground'}"
+            {message.includes('✓')
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-destructive text-destructive-foreground'}"
         >
             {message}
         </div>
@@ -298,9 +301,9 @@
         <div
             class="bg-card text-card-foreground rounded-lg shadow-lg max-w-md w-full border border-border p-6 space-y-4 animate-in zoom-in-95 duration-200"
         >
-            <h3 class="text-lg font-semibold">确认迁移数据</h3>
+            <h3 class="text-lg font-semibold">{t.confirmMigration}</h3>
             <p class="text-sm text-muted-foreground">
-                即将把数据迁移到: <br />
+                {t.migratingTo} <br />
                 <span class="font-mono bg-muted px-1 rounded"
                     >{newDataPath}</span
                 >
@@ -314,7 +317,7 @@
                     class="rounded border-input"
                 />
                 <label for="delete-old" class="text-sm font-medium"
-                    >迁移后删除原位置数据</label
+                    >{t.deleteOldData}</label
                 >
             </div>
 
@@ -323,9 +326,9 @@
                     variant="outline"
                     onclick={() => (showMigrationDialog = false)}
                 >
-                    取消
+                    {t.cancel}
                 </Button>
-                <Button onclick={confirmMigration}>开始迁移</Button>
+                <Button onclick={confirmMigration}>{t.startMigration}</Button>
             </div>
         </div>
     </div>

@@ -4,16 +4,14 @@
     import Button from "$lib/components/ui/Button.svelte";
     import { Keyboard, X } from "lucide-svelte";
     import { invoke } from "@tauri-apps/api/core";
-
-    interface Settings {
-        globalShortcut: string;
-        enableAutostart: boolean;
-        [key: string]: any;
-    }
+    import { i18n } from "$lib/i18n";
+    import type { Settings } from "$lib/types";
 
     let { settings = $bindable() } = $props<{
         settings: Settings;
     }>();
+
+    const t = $derived(i18n.t);
 
     // Detect OS
     const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
@@ -135,7 +133,7 @@
 
             // Check if it's the same as current shortcut
             if (shortcut === settings.globalShortcut) {
-                recordingWarning = "这已经是当前快捷键了";
+                recordingWarning = t.alreadyCurrentHotkey;
                 // Auto-close warning after 2 seconds
                 setTimeout(() => {
                     stopRecording();
@@ -165,8 +163,8 @@
 
 <div class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
     <div>
-        <h2 class="text-lg font-semibold mb-1">常规</h2>
-        <p class="text-sm text-muted-foreground">应用的基本行为设置</p>
+        <h2 class="text-lg font-semibold mb-1">{t.settingsGeneral}</h2>
+        <p class="text-sm text-muted-foreground">{t.globalHotkeyDesc}</p>
     </div>
 
     <Card class="p-6 space-y-6">
@@ -176,10 +174,10 @@
                     for="enable-autostart"
                     class="text-sm font-medium cursor-pointer"
                 >
-                    开机自启动
+                    {t.autostart}
                 </label>
                 <p class="text-xs text-muted-foreground">
-                    系统启动时自动运行 ClipMan
+                    {t.autostartDesc}
                 </p>
             </div>
             <input
@@ -199,10 +197,10 @@
             <div class="flex items-center justify-between">
                 <div class="space-y-1">
                     <label for="shortcut-input" class="text-sm font-medium"
-                        >全局热键</label
+                        >{t.globalHotkey}</label
                     >
                     <p class="text-xs text-muted-foreground">
-                        设置打开 ClipMan 窗口的快捷键
+                        {t.globalHotkeyDesc}
                     </p>
                 </div>
                 {#if !isRecording}
@@ -214,7 +212,7 @@
                         class="gap-2"
                     >
                         <Keyboard class="h-4 w-4" />
-                        录入
+                        {t.recording}
                     </Button>
                 {:else}
                     <Button
@@ -225,7 +223,7 @@
                         class="gap-2"
                     >
                         <X class="h-4 w-4" />
-                        取消
+                        {t.cancel}
                     </Button>
                 {/if}
             </div>
@@ -274,8 +272,8 @@
                                 class="flex items-center justify-center gap-2 text-sm text-muted-foreground"
                             >
                                 <Keyboard class="h-4 w-4" />
-                                <span>按下快捷键组合...</span>
-                                <span class="text-xs">(ESC 取消)</span>
+                                <span>{t.recordingHint}</span>
+                                <span class="text-xs">(ESC {t.cancel})</span>
                             </div>
                         {/if}
                     </div>
@@ -303,7 +301,7 @@
             <!-- Preset shortcuts -->
             <div class="flex flex-wrap gap-2 pt-1">
                 <span class="text-xs text-muted-foreground self-center"
-                    >常用快捷键:</span
+                    >{t.commonHotkeys}</span
                 >
                 {#each shortcutPresets as preset}
                     <Button
@@ -324,14 +322,14 @@
                 <summary
                     class="cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors select-none"
                 >
-                    高级：手动输入...
+                    {t.advancedManualInput}
                 </summary>
                 <div class="mt-2">
                     <Input
                         id="shortcut-input"
                         type="text"
                         bind:value={settings.globalShortcut}
-                        placeholder="例如: CommandOrControl+Shift+V"
+                        placeholder="CommandOrControl+Shift+V"
                         class="text-sm font-mono"
                     />
                 </div>
